@@ -35,3 +35,52 @@ export interface JiraConfig {
   baseUrl: string;
   projectKey: string;
 }
+
+export interface SprintIssue {
+  key: string;
+  summary: string;
+  status: string;
+  statusCategory: 'done' | 'in_progress' | 'to_do';
+  issueType: string;
+  assignee: string | null;
+  priority: string;
+  resolution?: string;
+  resolutionDate?: string;
+  created: string;
+}
+
+export interface IssueBreakdown {
+  total: number;
+  byType: Record<string, number>;
+  byStatus: Record<string, number>;
+  byAssignee: Record<string, number>;
+  completed: number;
+  incomplete: number;
+  issuesAddedAfterSprintStart: SprintIssue[];
+}
+
+export interface SprintReport {
+  sprint: {
+    id: number;
+    name: string;
+    state: string;
+    startDate?: string;
+    endDate?: string;
+    boardName: string;
+    durationDays?: number;
+  };
+  metrics: {
+    totalIssues: number;
+    completedIssues: number;
+    incompleteIssues: number;
+    completionRate: string;
+  };
+  breakdowns: {
+    byType: Record<string, number>;
+    byStatus: Record<string, number>;
+    byAssignee: Record<string, number>;
+  };
+  completedIssues: SprintIssue[];
+  incompleteIssues: SprintIssue[];
+  issuesAddedAfterSprintStart: SprintIssue[];
+}

@@ -472,3 +472,102 @@ export async function searchUsers(
   const data = await jiraFetch<JiraUser[]>(url, config);
   return data;
 }
+
+export interface JqlSearchResult {
+  issues: JiraIssue[];
+  isLast: boolean;
+  nextPageToken?: string;
+}
+
+export interface JiraIssue {
+  id: string;
+  key: string;
+  self: string;
+  fields: {
+    summary?: string;
+    status?: { name: string; id?: string; statusCategory?: { key: 'done' | 'indeterminate' | 'new'; name?: string } };
+    issuetype?: { name: string; id?: string; iconUrl?: string };
+    assignee?: { accountId: string; displayName: string; emailAddress?: string } | null;
+    resolution?: { name: string; id?: string };
+    resolutiondate?: string;
+    priority?: { name: string; id?: string };
+    created?: string;
+    updated?: string;
+    [key: string]: unknown;
+  };
+}
+
+export async function searchJql(
+  config: JiraConfig,
+  jql: string,
+  options?: {
+    fields?: string[];
+    maxResults?: number;
+    nextPageToken?: string;
+    expand?: string[];
+  },
+): Promise<JqlSearchResult> {
+  const url = `${config.baseUrl}/rest/api/3/search/jql`;
+  const body: Record<string, unknown> = { jql };
+
+  if (options?.fields) body.fields = options.fields;
+  if (options?.maxResults) body.maxResults = Math.min(options.maxResults, 100);
+  if (options?.nextPageToken) body.nextPageToken = options.nextPageToken;
+  if (options?.expand) body.expand = options.expand;
+
+  const data = await jiraFetch<JqlSearchResult>(url, config, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+
+  if (!data) return { issues: [], isLast: true };
+
+  return data;
+}
+
+export async function searchJqlAll(
+  config: JiraConfig,
+  jql: string,
+  options?: {
+    fields?: string[];
+    maxResults?: number;
+    expand?: string[];
+  },
+): Promise<JiraIssue[]> {
+  const allIssues: JiraIssue[] = [];
+  let nextPageToken: string | undefined;
+  const maxResults = options?.maxResults ? Math.min(options.maxResults, 100) : 100;
+
+  do {
+    const result = await searchJql(config, jql, {
+      ...options,
+      maxResults,
+      nextPageToken,
+    });
+    allIssues.push(...(result?.issues ?? []));
+    nextPageToken = result?.nextPageToken;
+  } while (nextPageToken);
+
+  return allIssues;
+}
+
+export async function findSprintByName(
+  config: JiraConfig,
+  nameOrId: string,
+): Promise<JiraSprint | null> {
+  const boards = await findBoards(config);
+  const id = parseInt(nameOrId, 10);
+  const isId = !isNaN(id) && String(id) === nameOrId;
+
+  for (const board of boards) {
+    for (const state of ['active', 'future', 'closed'] as const) {
+      const sprints = await getSprints(config, board.id, state);
+      for (const sprint of sprints) {
+        if (isId && sprint.id === id) return sprint;
+        if (sprint.name.toLowerCase() === nameOrId.toLowerCase()) return sprint;
+      }
+    }
+  }
+
+  return null;
+}
