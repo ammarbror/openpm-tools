@@ -225,16 +225,8 @@ function formatMarkdown(report: SprintReport): string {
   }
   md += '\n';
 
-  if (report.completedIssues.length > 0) {
-    md += `## Completed Issues (${report.completedIssues.length})\n\n`;
-    for (const issue of report.completedIssues) {
-      md += `- **${issue.key}** — ${issue.summary} (${issue.assignee ?? 'Unassigned'})\n`;
-    }
-    md += '\n';
-  }
-
   if (report.incompleteIssues.length > 0) {
-    md += `## Incomplete Issues (${report.incompleteIssues.length})\n\n`;
+    md += `## Incomplete / Carryover Issues (${report.incompleteIssues.length})\n\n`;
     for (const issue of report.incompleteIssues) {
       md += `- **${issue.key}** — ${issue.summary} [${issue.status}] (${issue.assignee ?? 'Unassigned'})\n`;
     }
@@ -242,11 +234,7 @@ function formatMarkdown(report: SprintReport): string {
   }
 
   if (report.issuesAddedAfterSprintStart.length > 0) {
-    md += `## Issues Added After Sprint Start (${report.issuesAddedAfterSprintStart.length})\n\n`;
-    for (const issue of report.issuesAddedAfterSprintStart) {
-      md += `- **${issue.key}** — ${issue.summary} (${issue.assignee ?? 'Unassigned'})\n`;
-    }
-    md += '\n';
+    md += `> ${report.issuesAddedAfterSprintStart.length} issue(s) were added after sprint start (scope change). See Scope Change Rate above.\n\n`;
   }
 
   md += `## Insights & Suggestions\n\n`;

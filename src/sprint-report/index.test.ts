@@ -99,7 +99,7 @@ void describe('generateSprintReportWorkflow', () => {
     assert.ok(markdown.includes('Sprint 12'));
     assert.equal(report.metrics.completionRate, '60%');
     assert.equal(report.metrics.completedIssues, 3);
-    assert.ok(markdown.includes('3 completed') || markdown.includes('Completed Issues (3)'));
+    assert.ok(markdown.includes('| Completed | 3 |'));
   });
 
   void it('should throw when no boards found', async () => {
@@ -285,7 +285,7 @@ void describe('generateSprintReportWorkflow', () => {
     const { report, markdown } = await generateSprintReportWorkflow(config, {});
 
     assert.equal(report.issuesAddedAfterSprintStart.length, 2);
-    assert.ok(markdown.includes('Issues Added After Sprint Start (2)'));
+    assert.ok(markdown.includes('2 issue(s) were added after sprint start'));
   });
 
   void it('should handle sprint dates where end < start (durationDays undefined)', async () => {
