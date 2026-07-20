@@ -54,9 +54,18 @@ export interface IssueBreakdown {
   byType: Record<string, number>;
   byStatus: Record<string, number>;
   byAssignee: Record<string, number>;
+  byPriority: Record<string, number>;
+  scopeChangeCount: number;
   completed: number;
   incomplete: number;
   issuesAddedAfterSprintStart: SprintIssue[];
+}
+
+export interface AssigneeBalanceEntry {
+  assignee: string;
+  count: number;
+  share: string;
+  load: 'overloaded' | 'balanced' | 'idle' | 'unassigned';
 }
 
 export interface SprintReport {
@@ -74,13 +83,18 @@ export interface SprintReport {
     completedIssues: number;
     incompleteIssues: number;
     completionRate: string;
+    scopeChangeRate: string;
+    carriedOverIssues: number;
   };
   breakdowns: {
     byType: Record<string, number>;
     byStatus: Record<string, number>;
     byAssignee: Record<string, number>;
+    byPriority: Record<string, number>;
+    assigneeBalance: AssigneeBalanceEntry[];
   };
   completedIssues: SprintIssue[];
   incompleteIssues: SprintIssue[];
   issuesAddedAfterSprintStart: SprintIssue[];
+  insights: string[];
 }

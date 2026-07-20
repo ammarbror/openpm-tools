@@ -1,4 +1,4 @@
-import type { JiraConfig, SprintReport, SprintIssue, IssueBreakdown } from '../review-pr/types.ts';
+import type { JiraConfig, SprintReport, SprintIssue, IssueBreakdown, AssigneeBalanceEntry } from '../review-pr/types.ts';
 import { loadJiraConfig } from '../review-pr/index.ts';
 import {
   findBoards,
@@ -76,6 +76,7 @@ function calculateBreakdown(issues: SprintIssue[], sprintStartDate?: string): Is
   const byType: Record<string, number> = {};
   const byStatus: Record<string, number> = {};
   const byAssignee: Record<string, number> = {};
+  const byPriority: Record<string, number> = {};
   let completed = 0;
   let incomplete = 0;
   const issuesAddedAfter: SprintIssue[] = [];
@@ -85,6 +86,7 @@ function calculateBreakdown(issues: SprintIssue[], sprintStartDate?: string): Is
     byStatus[issue.status] = (byStatus[issue.status] ?? 0) + 1;
     const assignee = issue.assignee ?? 'Unassigned';
     byAssignee[assignee] = (byAssignee[assignee] ?? 0) + 1;
+    byPriority[issue.priority] = (byPriority[issue.priority] ?? 0) + 1;
 
     if (issue.statusCategory === 'done') {
       completed++;
@@ -97,7 +99,70 @@ function calculateBreakdown(issues: SprintIssue[], sprintStartDate?: string): Is
     }
   }
 
-  return { byType, byStatus, byAssignee, completed, incomplete, issuesAddedAfterSprintStart: issuesAddedAfter };
+  return {
+    total: issues.length,
+    byType,
+    byStatus,
+    byAssignee,
+    byPriority,
+    scopeChangeCount: issuesAddedAfter.length,
+    completed,
+    incomplete,
+    issuesAddedAfterSprintStart: issuesAddedAfter,
+  };
+}
+
+function buildInsights(report: SprintReport): string[] {
+  const insights: string[] = [];
+  const m = report.metrics;
+  const b = report.breakdowns;
+
+  const scopeChangeRateNum = m.scopeChangeRate === 'N/A' ? 0 : parseInt(m.scopeChangeRate, 10);
+  const scopeChangeCount = report.issuesAddedAfterSprintStart.length;
+
+  if (m.scopeChangeRate !== 'N/A' && scopeChangeRateNum >= 30) {
+    insights.push(
+      `Scope change: ${m.scopeChangeRate} of issues (${scopeChangeCount}) were added after sprint start. Lock scope at sprint planning to protect the team's commitment.`,
+    );
+  }
+
+  if (m.carriedOverIssues > 0) {
+    insights.push(
+      `${m.carriedOverIssues} issue(s) carried over unfinished. Consider a smaller sprint commitment or breaking large items into subtasks next sprint.`,
+    );
+  }
+
+  const completionRateNum = m.completionRate === 'N/A' ? 100 : parseInt(m.completionRate, 10);
+  if (completionRateNum < 70 && m.totalIssues > 0) {
+    insights.push(
+      `Completion rate is ${m.completionRate}. Investigate blockers in the Incomplete Issues section and review estimation accuracy.`,
+    );
+  }
+
+  for (const entry of b.assigneeBalance) {
+    if (entry.load === 'overloaded') {
+      insights.push(
+        `${entry.assignee} is carrying ${entry.share} of the sprint (${entry.count} issues) — risk of bottleneck. Rebalance work or pair on the load.`,
+      );
+    }
+  }
+
+  for (const entry of b.assigneeBalance) {
+    if (entry.load === 'unassigned' && entry.count > 0) {
+      insights.push(
+        `${entry.count} issue(s) are unassigned. Assign owners before the next sprint to avoid drift.`,
+      );
+      break;
+    }
+  }
+
+  if (insights.length === 0 && m.totalIssues > 0) {
+    insights.push(
+      `Sprint looks healthy: ${m.completionRate} completion with manageable scope change. Keep the cadence.`,
+    );
+  }
+
+  return insights;
 }
 
 function formatMarkdown(report: SprintReport): string {
@@ -124,6 +189,8 @@ function formatMarkdown(report: SprintReport): string {
   md += `| Completed | ${m.completedIssues} |\n`;
   md += `| Incomplete | ${m.incompleteIssues} |\n`;
   md += `| Completion Rate | ${m.completionRate} |\n`;
+  md += `| Scope Change Rate | ${m.scopeChangeRate} |\n`;
+  md += `| Carried Over | ${m.carriedOverIssues} |\n`;
   md += '\n';
 
   md += `## By Issue Type\n\n`;
@@ -142,11 +209,19 @@ function formatMarkdown(report: SprintReport): string {
   }
   md += '\n';
 
-  md += `## By Assignee\n\n`;
-  md += `| Assignee | Count |\n`;
+  md += `## By Priority\n\n`;
+  md += `| Priority | Count |\n`;
   md += `|----------|-------|\n`;
-  for (const [assignee, count] of Object.entries(b.byAssignee).sort((a, b) => b[1] - a[1])) {
-    md += `| ${assignee} | ${count} |\n`;
+  for (const [priority, count] of Object.entries(b.byPriority).sort((a, b) => b[1] - a[1])) {
+    md += `| ${priority} | ${count} |\n`;
+  }
+  md += '\n';
+
+  md += `## By Assignee\n\n`;
+  md += `| Assignee | Count | Share | Load |\n`;
+  md += `|----------|-------|-------|------|\n`;
+  for (const entry of b.assigneeBalance) {
+    md += `| ${entry.assignee} | ${entry.count} | ${entry.share} | ${entry.load} |\n`;
   }
   md += '\n';
 
@@ -173,6 +248,16 @@ function formatMarkdown(report: SprintReport): string {
     }
     md += '\n';
   }
+
+  md += `## Insights & Suggestions\n\n`;
+  if (report.insights.length > 0) {
+    for (const insight of report.insights) {
+      md += `- ${insight}\n`;
+    }
+  } else {
+    md += `No specific risks detected — sprint looks on track.\n`;
+  }
+  md += '\n';
 
   return md;
 }
@@ -234,6 +319,26 @@ export async function generateSprintReportWorkflow(
   const completionRate = totalIssues > 0
     ? `${Math.round((completedCount / totalIssues) * 100)}%`
     : 'N/A';
+  const scopeChangeRate = totalIssues > 0
+    ? `${Math.round((breakdown.scopeChangeCount / totalIssues) * 100)}%`
+    : 'N/A';
+
+  const assigneeBalance: AssigneeBalanceEntry[] = Object.entries(breakdown.byAssignee)
+    .map(([assignee, count]) => {
+      const share = totalIssues > 0 ? `${Math.round((count / totalIssues) * 100)}%` : '0%';
+      let load: AssigneeBalanceEntry['load'];
+      if (assignee === 'Unassigned') {
+        load = 'unassigned';
+      } else if (parseInt(share, 10) >= 40) {
+        load = 'overloaded';
+      } else if (count === 0) {
+        load = 'idle';
+      } else {
+        load = 'balanced';
+      }
+      return { assignee, count, share, load };
+    })
+    .sort((a, b) => b.count - a.count);
 
   const report: SprintReport = {
     sprint: {
@@ -250,16 +355,23 @@ export async function generateSprintReportWorkflow(
       completedIssues: completedCount,
       incompleteIssues: totalIssues - completedCount,
       completionRate,
+      scopeChangeRate,
+      carriedOverIssues: totalIssues - completedCount,
     },
     breakdowns: {
       byType: breakdown.byType,
       byStatus: breakdown.byStatus,
       byAssignee: breakdown.byAssignee,
+      byPriority: breakdown.byPriority,
+      assigneeBalance,
     },
     completedIssues,
     incompleteIssues,
     issuesAddedAfterSprintStart: breakdown.issuesAddedAfterSprintStart,
+    insights: [],
   };
+
+  report.insights = buildInsights(report);
 
   const markdown = formatMarkdown(report);
 
