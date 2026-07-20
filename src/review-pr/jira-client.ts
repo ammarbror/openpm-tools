@@ -551,6 +551,48 @@ export async function searchJqlAll(
   return allIssues;
 }
 
+export interface StoryPointsFieldResult {
+  /** e.g. "customfield_10016" or null if not found */
+  fieldId: string | null;
+}
+
+interface JiraFieldDescriptor {
+  id: string;
+  name: string;
+  schema?: { type: string };
+  custom?: boolean;
+}
+
+/**
+ * Discover the Story Points custom field id for the instance.
+ *
+ * GET /rest/api/3/field
+ * The response is an array of field descriptors. We look for the first
+ * numeric field whose name matches /story\s*points/i.
+ *
+ * Returns the field id (e.g. "customfield_10016") or null if none found.
+ */
+export async function findStoryPointsField(
+  config: JiraConfig,
+): Promise<string | null> {
+  const url = `${config.baseUrl}/rest/api/3/field`;
+  const fields = await jiraFetch<JiraFieldDescriptor[]>(url, config);
+
+  if (!Array.isArray(fields)) {
+    return null;
+  }
+
+  for (const field of fields) {
+    const isNumber = field.schema?.type === 'number';
+    const nameMatches = typeof field.name === 'string' && /story\s*points/i.test(field.name);
+    if (isNumber && nameMatches) {
+      return field.id;
+    }
+  }
+
+  return null;
+}
+
 export async function findSprintByName(
   config: JiraConfig,
   nameOrId: string,

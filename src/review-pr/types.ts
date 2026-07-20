@@ -47,6 +47,14 @@ export interface SprintIssue {
   resolution?: string;
   resolutionDate?: string;
   created: string;
+  storyPoints?: number;
+  flagged?: boolean;
+}
+
+export interface DailyBurndownPoint {
+  date: string;        // YYYY-MM-DD
+  remaining: number;   // remaining count (byCount) or remaining points (byPoints)
+  ideal: number;       // ideal remaining for that day
 }
 
 export interface IssueBreakdown {
@@ -59,6 +67,7 @@ export interface IssueBreakdown {
   completed: number;
   incomplete: number;
   issuesAddedAfterSprintStart: SprintIssue[];
+  pointsByAssignee: Record<string, number>;
 }
 
 export interface AssigneeBalanceEntry {
@@ -66,6 +75,7 @@ export interface AssigneeBalanceEntry {
   count: number;
   share: string;
   load: 'overloaded' | 'balanced' | 'idle' | 'unassigned';
+  points?: number;
 }
 
 export interface SprintReport {
@@ -85,6 +95,9 @@ export interface SprintReport {
     completionRate: string;
     scopeChangeRate: string;
     carriedOverIssues: number;
+    committedPoints: number;
+    completedPoints: number;
+    pointCompletionRate: string;
   };
   breakdowns: {
     byType: Record<string, number>;
@@ -97,4 +110,19 @@ export interface SprintReport {
   incompleteIssues: SprintIssue[];
   issuesAddedAfterSprintStart: SprintIssue[];
   insights: string[];
+  burndown: {
+    byCount: DailyBurndownPoint[];
+    byPoints: DailyBurndownPoint[];
+    isEstimated: boolean;
+  };
+  health: {
+    score: number;
+    grade: 'A' | 'B' | 'C' | 'D' | 'F';
+    factors: { label: string; score: number; detail: string }[];
+  };
+  blockers: SprintIssue[];
+  progressBars: {
+    completion: string;
+    points: string;
+  };
 }
