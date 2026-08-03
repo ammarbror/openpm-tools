@@ -517,6 +517,12 @@ export async function createTicketWorkflow(
     ...(params.customFields ?? {}),
   };
 
+  // KAIRA requires Story Points (customfield_10032). Default to 0 unless the
+  // caller explicitly supplies a value, so issue creation does not fail.
+  if (mergedCustomFields.customfield_10032 == null) {
+    mergedCustomFields.customfield_10032 = 0;
+  }
+
   // Map story points to Jira's standard Story Points custom field
   if (params.storyPoints !== undefined) {
     mergedCustomFields.customfield_10032 = params.storyPoints;
