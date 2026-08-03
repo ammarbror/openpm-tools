@@ -339,6 +339,51 @@ function buildHealth(report: SprintReport): SprintReport['health'] {
   return { score, grade, factors };
 }
 
+// ── Mermaid chart helpers (Obsidian-native) ──
+
+function mermaidBurndownLine(series: DailyBurndownPoint[], title: string): string {
+  if (series.length < 2) return '';
+  const dates = series.map((p) => `"${p.date.slice(5)}"`).join(', ');
+  const values = series.map((p) => String(p.remaining)).join(', ');
+  const ideals = series.map((p) => String(Math.round(p.ideal * 100) / 100)).join(', ');
+  const maxVal = Math.max(...series.map((p) => Math.max(p.remaining, Math.ceil(p.ideal))), 1);
+  return [
+    '```mermaid',
+    'xychart-beta',
+    `    title "${title}"`,
+    `    x-axis "Date" [${dates}]`,
+    `    y-axis "Remaining" 0 --> ${Math.ceil(maxVal * 1.1)}`,
+    `    line [${values}]`,
+    `    line [${ideals}]`,
+    '```',
+  ].join('\n');
+}
+
+function mermaidPie(title: string, data: Record<string, number>): string {
+  const entries = Object.entries(data)
+    .sort((a, b) => b[1] - a[1])
+    .map(([k, v]) => `    "${k}" : ${v}`)
+    .join('\n');
+  if (!entries) return '';
+  return '```mermaid\npie\n    title ' + title + '\n' + entries + '\n```';
+}
+
+function mermaidBar(series: { label: string; value: number }[], title: string): string {
+  if (series.length === 0) return '';
+  const labels = series.map((s) => `"${s.label}"`).join(', ');
+  const values = series.map((s) => String(s.value)).join(', ');
+  const maxVal = Math.max(...series.map((s) => s.value), 1);
+  return [
+    '```mermaid',
+    'xychart-beta',
+    `    title "${title}"`,
+    `    x-axis ${labels.length > 1 ? `[${labels}]` : `"${series[0].label}"`}`,
+    `    y-axis 0 --> ${Math.ceil(maxVal * 1.2)}`,
+    `    bar [${values}]`,
+    '```',
+  ].join('\n');
+}
+
 function formatMarkdown(report: SprintReport): string {
   const s = report.sprint;
   const m = report.metrics;
@@ -420,6 +465,18 @@ function formatMarkdown(report: SprintReport): string {
       });
     }
     md += '```\n\n';
+
+    // Mermaid burndown charts
+    const bdCountChart = mermaidBurndownLine(bd.byCount, 'Burndown (Issues)');
+    if (bdCountChart) {
+      md += bdCountChart + '\n\n';
+    }
+    if (m.committedPoints > 0 && bd.byPoints.length > 0) {
+      const bdPointsChart = mermaidBurndownLine(bd.byPoints, 'Burndown (Story Points)');
+      if (bdPointsChart) {
+        md += bdPointsChart + '\n\n';
+      }
+    }
   }
 
   md += `## By Issue Type\n\n`;
@@ -430,6 +487,11 @@ function formatMarkdown(report: SprintReport): string {
   }
   md += '\n';
 
+  const typePie = mermaidPie('Issue Types', b.byType);
+  if (typePie) {
+    md += typePie + '\n\n';
+  }
+
   md += `## By Status\n\n`;
   md += `| Status | Count |\n`;
   md += `|--------|-------|\n`;
@@ -437,6 +499,11 @@ function formatMarkdown(report: SprintReport): string {
     md += `| ${status} | ${count} |\n`;
   }
   md += '\n';
+
+  const statusPie = mermaidPie('Status Distribution', b.byStatus);
+  if (statusPie) {
+    md += statusPie + '\n\n';
+  }
 
   md += `## By Priority\n\n`;
   md += `| Priority | Count |\n`;
@@ -461,6 +528,15 @@ function formatMarkdown(report: SprintReport): string {
     }
   }
   md += '\n';
+
+  // Mermaid bar chart for assignee workload
+  const assigneeBar = mermaidBar(
+    b.assigneeBalance.map((e) => ({ label: e.assignee.split(' ')[0] ?? e.assignee, value: e.count })),
+    'Issues per Assignee',
+  );
+  if (assigneeBar) {
+    md += assigneeBar + '\n\n';
+  }
 
   if (report.incompleteIssues.length > 0) {
     md += `## Incomplete / Carryover Issues (${report.incompleteIssues.length})\n\n`;
