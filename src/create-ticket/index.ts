@@ -4,7 +4,9 @@ import {
   createIssue,
   findBoards,
   findTargetSprint,
+  getSprints,
   addIssueToSprint,
+  searchUsers,
   textToADF,
 } from '../review-pr/jira-client.ts';
 
@@ -236,6 +238,66 @@ function taskTemplate(description: string): string {
   ].join('\n');
 }
 
+function epicTemplate(description: string): string {
+  const body = description.trim();
+  const tech = hasTechIndicators(body);
+  const topics = extractTopics(body);
+
+  const goals: string[] = [];
+  const lines = body.split('\n').map(l => l.replace(/^[-*\s]+/, '').trim()).filter(Boolean);
+  const goalLines = lines.filter(l =>
+    /\b(?:create|add|build|implement|deliver|enable|support|launch|establish|define)\b/i.test(l)
+  );
+  if (goalLines.length >= 2) {
+    for (const line of goalLines.slice(0, 5)) {
+      goals.push(`- [ ] ${line.replace(/^[a-z]/, c => c.toUpperCase())}`);
+    }
+  } else {
+    goals.push('- [ ] Define scope, objectives, and success criteria');
+    goals.push('- [ ] Break down into child issues (Task/Story/Bug)');
+  }
+
+  const initiatives: string[] = [];
+  if (tech.api || tech.integration) {
+    initiatives.push('- API integration or third-party coordination');
+  }
+  if (tech.database) {
+    initiatives.push('- Database schema, migration, or data pipeline changes');
+  }
+  if (tech.ui) {
+    initiatives.push('- Frontend / UI changes requiring design review');
+  }
+  if (tech.auth) {
+    initiatives.push('- Authentication, authorization, and access control');
+  }
+  if (tech.mobile) {
+    initiatives.push('- Mobile platform considerations (iOS/Android/responsive)');
+  }
+  if (tech.payment) {
+    initiatives.push('- Payment/financial workflows');
+  }
+
+  return [
+    'h3. Epic Description',
+    body,
+    '',
+    'h3. Goals / Objectives',
+    ...goals,
+    '',
+    'h3. Key Initiatives',
+    initiatives.length > 0
+      ? initiatives.join('\n')
+      : '- List the major work streams or initiatives under this epic',
+    '',
+    'h3. Out of Scope',
+    '- Explicitly list what is NOT covered by this epic',
+    '',
+    'h3. Dependencies & Risks',
+    '- Blockers, external dependencies, and known risks',
+    topics.length > 0 ? `- Key references: ${topics.join(', ')}` : '',
+  ].join('\n');
+}
+
 function bugTemplate(description: string): string {
   const body = description.trim();
   const tech = hasTechIndicators(body);
@@ -329,6 +391,8 @@ export function formatDescription(
       return storyTemplate(description);
     case 'bug':
       return bugTemplate(description);
+    case 'epic':
+      return epicTemplate(description);
     case 'task':
     default:
       return taskTemplate(description);
@@ -340,8 +404,12 @@ function formatResult(
   summary: string,
   sprintName: string | null,
   boardName: string | null,
+  parentEpicKey?: string,
 ): string {
   let msg = `✅ **Ticket created: ${issueKey}**\n\n**Summary:** ${summary}`;
+  if (parentEpicKey) {
+    msg += `\n**Epic:** ${parentEpicKey}`;
+  }
   if (sprintName) {
     msg += `\n**Sprint:** ${sprintName}`;
   }
@@ -351,14 +419,39 @@ function formatResult(
   return msg;
 }
 
+function getEpicCustomFields(issueType: string | undefined, parentEpicKey?: string): Record<string, unknown> {
+  const fields: Record<string, unknown> = {};
+
+  if (issueType?.toLowerCase() === 'epic') {
+    // Epic Name is required for Epic issue type
+    fields.customfield_10011 = ''; // placeholder; overridden below if possible
+  }
+
+  if (parentEpicKey) {
+    // Link child issue to parent Epic
+    fields.customfield_10014 = parentEpicKey;
+  }
+
+  return fields;
+}
+
 export { createIssue, findBoards, findTargetSprint, addIssueToSprint };
 
 export interface TicketParams {
   summary: string;
   description?: string;
   issueType?: string;
+  /** Jira account ID for the assignee (e.g. "557058:abc123") */
   assigneeAccountId?: string;
+  /** Assignee display name — resolved to accountId via searchUsers if assigneeAccountId is not set */
+  assignee?: string;
   customFields?: Record<string, unknown>;
+  /** If set, links the created issue as a child of this Epic key (e.g. "KAIRA-100") */
+  parentEpicKey?: string;
+  /** Story points (maps to customfield_10032) */
+  storyPoints?: number;
+  /** If set, finds and adds the issue to the sprint with this name instead of auto-detecting */
+  sprintName?: string;
 }
 
 export type TicketResult = {
@@ -380,26 +473,70 @@ export async function createTicketWorkflow(
   }
   const board = boards[0];
 
+  // Resolve sprint: use sprintName if provided, otherwise auto-detect
   let sprintName: string | null = null;
-  const sprint = await findTargetSprint(config, board.id);
-  if (sprint) {
-    sprintName = sprint.name;
+  let sprint: Awaited<ReturnType<typeof findTargetSprint>> = null;
+
+  if (params.sprintName) {
+    // Try active sprints first, then future
+    const allSprints = [
+      ...(await getSprints(config, board.id, 'active')),
+      ...(await getSprints(config, board.id, 'future')),
+    ];
+    sprint = allSprints.find((s) => s.name === params.sprintName) ?? null;
+    if (sprint) {
+      sprintName = sprint.name;
+    }
+  } else {
+    sprint = await findTargetSprint(config, board.id);
+    if (sprint) {
+      sprintName = sprint.name;
+    }
   }
+
+  // Resolve assignee: if assignee (display name) is provided and no accountId, search for it
+  let assigneeAccountId = params.assigneeAccountId;
+  if (!assigneeAccountId && params.assignee) {
+    const users = await searchUsers(config, params.assignee);
+    if (users.length > 0) {
+      assigneeAccountId = users[0].accountId;
+    }
+  }
+
+  const isEpic = params.issueType?.toLowerCase() === 'epic';
 
   const description =
     params.description
       ? formatDescription(params.issueType, params.description)
       : undefined;
 
+  // Merge epic-specific custom fields with user-provided ones
+  const epicFields = getEpicCustomFields(params.issueType, params.parentEpicKey);
+  const mergedCustomFields: Record<string, unknown> = {
+    ...epicFields,
+    ...(params.customFields ?? {}),
+  };
+
+  // Map story points to Jira's standard Story Points custom field
+  if (params.storyPoints !== undefined) {
+    mergedCustomFields.customfield_10032 = params.storyPoints;
+  }
+
+  // For Epic type, set Epic Name to the summary if no explicit epic name given
+  if (isEpic && !mergedCustomFields.customfield_10011) {
+    mergedCustomFields.customfield_10011 = params.summary;
+  }
+
   const issue = await createIssue(config, {
     summary: params.summary,
     description,
     issueType: params.issueType,
-    assigneeAccountId: params.assigneeAccountId,
-    customFields: params.customFields,
+    assigneeAccountId,
+    customFields: Object.keys(mergedCustomFields).length > 0 ? mergedCustomFields : undefined,
   });
 
-  if (sprint) {
+  // Don't add Epics to sprints — they live above sprint level
+  if (!isEpic && sprint) {
     await addIssueToSprint(config, sprint.id, issue.key);
   }
 
@@ -408,6 +545,7 @@ export async function createTicketWorkflow(
     params.summary,
     sprintName,
     board.name,
+    params.parentEpicKey,
   );
 
   return {
