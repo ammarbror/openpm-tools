@@ -126,3 +126,26 @@ export interface SprintReport {
     points: string;
   };
 }
+
+// ---------------------------------------------------------------------------
+// Version management
+// ---------------------------------------------------------------------------
+
+export interface JiraVersion {
+  id: string;
+  name: string;
+  description?: string;
+  archived: boolean;
+  released: boolean;
+  releaseDate?: string;
+  self: string;
+}
+
+export interface CreateVersionParams {
+  name: string;
+  projectId: number;          // Jira Version API wants int64 projectId
+  description?: string;
+  startDate?: string;         // yyyy-mm-dd
+  releaseDate?: string;
+  archived?: boolean;
+}

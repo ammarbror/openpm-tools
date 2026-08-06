@@ -1,4 +1,4 @@
-import type { JiraConfig } from './types.ts';
+import type { JiraConfig, JiraVersion, CreateVersionParams } from './types.ts';
 
 function buildAuthHeader(config: JiraConfig): string {
   const encoded = Buffer.from(`${config.email}:${config.apiToken}`).toString('base64');
@@ -612,4 +612,43 @@ export async function findSprintByName(
   }
 
   return null;
+}
+
+// ---------------------------------------------------------------------------
+// Project & Version management
+// ---------------------------------------------------------------------------
+
+export async function getProject(
+  config: JiraConfig,
+  projectKey: string,
+): Promise<{ id: string; key: string; name: string }> {
+  const url = `${config.baseUrl}/rest/api/3/project/${projectKey}`;
+  return jiraFetch<{ id: string; key: string; name: string }>(url, config);
+}
+
+export async function createVersion(
+  config: JiraConfig,
+  params: CreateVersionParams,
+): Promise<JiraVersion> {
+  const url = `${config.baseUrl}/rest/api/3/version`;
+  return jiraFetch<JiraVersion>(url, config, {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
+}
+
+export async function addFixVersionToIssue(
+  config: JiraConfig,
+  issueKey: string,
+  versionId: string,
+): Promise<void> {
+  const url = `${config.baseUrl}/rest/api/3/issue/${issueKey}`;
+  await jiraFetch(url, config, {
+    method: 'PUT',
+    body: JSON.stringify({
+      update: {
+        fixVersions: [{ add: { id: versionId } }],
+      },
+    }),
+  });
 }

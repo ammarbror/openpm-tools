@@ -5,8 +5,11 @@ import {
   transitionIssue,
   getTransitions,
   addIssueComment,
+  getProject,
+  createVersion,
+  addFixVersionToIssue,
 } from './jira-client.js';
-import type { JiraConfig } from './types.js';
+import type { JiraConfig, CreateVersionParams } from './types.js';
 
 const config: JiraConfig = {
   email: 'bot@example.com',
@@ -129,6 +132,154 @@ void describe('addIssueComment', () => {
     };
 
     await addIssueComment('PROJ-42', config, 'Reviewed by automation.');
+  });
+});
+
+void describe('getProject', () => {
+  void it('returns id, key, and name from a Jira project', async () => {
+    globalThis.fetch = async (url: RequestInfo | URL, init?: RequestInit) => {
+      assert.equal(
+        url,
+        'https://my-domain.atlassian.net/rest/api/3/project/PROJ',
+      );
+      assert.equal(init?.method ?? 'GET', 'GET');
+      return new Response(
+        JSON.stringify({
+          id: '10000',
+          key: 'PROJ',
+          name: 'My Project',
+        }),
+        {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        },
+      );
+    };
+
+    const result = await getProject(config, 'PROJ');
+    assert.deepStrictEqual(result, {
+      id: '10000',
+      key: 'PROJ',
+      name: 'My Project',
+    });
+  });
+
+  void it('throws with HTTP status on non-2xx response', async () => {
+    globalThis.fetch = async () => {
+      return new Response('Not Found', {
+        status: 404,
+        statusText: 'Not Found',
+      });
+    };
+
+    await assert.rejects(
+      () => getProject(config, 'NOPE'),
+      (err: Error) => {
+        assert.ok(err.message.includes('404'));
+        return true;
+      },
+    );
+  });
+});
+
+void describe('createVersion', () => {
+  void it('POSTs version params and returns the created version', async () => {
+    const params: CreateVersionParams = {
+      name: 'Release 2026-08-07',
+      projectId: 10000,
+      description: 'Sprint 42 release',
+      archived: false,
+    };
+
+    globalThis.fetch = async (url: RequestInfo | URL, init?: RequestInit) => {
+      assert.equal(
+        url,
+        'https://my-domain.atlassian.net/rest/api/3/version',
+      );
+      assert.equal(init?.method, 'POST');
+      const body = JSON.parse(init?.body as string);
+      assert.deepStrictEqual(body, {
+        name: 'Release 2026-08-07',
+        projectId: 10000,
+        description: 'Sprint 42 release',
+        archived: false,
+      });
+      return new Response(
+        JSON.stringify({
+          id: '10001',
+          name: 'Release 2026-08-07',
+          description: 'Sprint 42 release',
+          archived: false,
+          released: false,
+          self: 'https://my-domain.atlassian.net/rest/api/3/version/10001',
+        }),
+        {
+          status: 201,
+          headers: { 'content-type': 'application/json' },
+        },
+      );
+    };
+
+    const result = await createVersion(config, params);
+    assert.strictEqual(result.id, '10001');
+    assert.strictEqual(result.name, 'Release 2026-08-07');
+    assert.strictEqual(result.released, false);
+    assert.strictEqual(result.archived, false);
+  });
+
+  void it('throws with HTTP status on non-2xx response', async () => {
+    globalThis.fetch = async () => {
+      return new Response('Bad Request', {
+        status: 400,
+        statusText: 'Bad Request',
+      });
+    };
+
+    await assert.rejects(
+      () => createVersion(config, { name: 'v1', projectId: 10000 }),
+      (err: Error) => {
+        assert.ok(err.message.includes('400'));
+        return true;
+      },
+    );
+  });
+});
+
+void describe('addFixVersionToIssue', () => {
+  void it('PUTs the correct fixVersions update body', async () => {
+    globalThis.fetch = async (url: RequestInfo | URL, init?: RequestInit) => {
+      assert.equal(
+        url,
+        'https://my-domain.atlassian.net/rest/api/3/issue/KAIRA-123',
+      );
+      assert.equal(init?.method, 'PUT');
+      const body = JSON.parse(init?.body as string);
+      assert.deepStrictEqual(body, {
+        update: {
+          fixVersions: [{ add: { id: '10001' } }],
+        },
+      });
+      return new Response(null, { status: 204 });
+    };
+
+    await addFixVersionToIssue(config, 'KAIRA-123', '10001');
+  });
+
+  void it('throws with HTTP status on non-2xx response', async () => {
+    globalThis.fetch = async () => {
+      return new Response('Forbidden', {
+        status: 403,
+        statusText: 'Forbidden',
+      });
+    };
+
+    await assert.rejects(
+      () => addFixVersionToIssue(config, 'KAIRA-999', '10001'),
+      (err: Error) => {
+        assert.ok(err.message.includes('403'));
+        return true;
+      },
+    );
   });
 });
 
