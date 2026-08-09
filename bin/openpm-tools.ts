@@ -224,9 +224,11 @@ async function main() {
 
       case 'create-prdd': {
         const prodName = positional[0] || (flags.name as string) || 'Product';
+        const vaultPath = process.env.OBSIDIAN_VAULT_PATH || process.env.OBSIDIAN_VAULT || 'Dynamic (OBSIDIAN_VAULT_PATH env / user home / user prompt)';
         const guide = {
           command: 'create-prdd',
           productName: prodName,
+          vaultPath,
           description: 'Bilingual Product Requirements & Design Document (PRDD) generator for Obsidian',
           sections: [
             '1. Overview & Problem Statement',

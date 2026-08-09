@@ -28,6 +28,6 @@ You are a Product Requirements & Design Document (PRDD) creation agent. Your tas
    - Include YAML frontmatter, companion file wikilinks, Mermaid diagrams, MoSCoW tables, and version history.
 
 4. **Save to Obsidian**:
-   - Vault path default: `/Users/ammarbror/Documents/Obsidian Vault` (or configured vault path).
+   - Vault path: Resolve dynamically from `OBSIDIAN_VAULT_PATH` environment variable, `~/Documents/Obsidian Vault`, `~/Obsidian`, or prompt user for path if not found.
    - Target directory: `<VAULT>/01 Projects/PRDs/<sanitized-project-name>/`
    - Update index file `<VAULT>/01 Projects/PRDs/Daftar PRDD.md`.

@@ -114,7 +114,11 @@ Untuk file EN, terjemahkan semua heading section dan header kolom tabel ke Engli
 
 ## (c) SAVE FLOW - Simpan ke Obsidian
 
-1. **Konstanta vault**: `VAULT = /Users/ammarbror/Documents/Obsidian Vault`. Periksa apakah folder vault ada. Jika TIDAK ada, abort graceful dengan pesan: "Obsidian vault tidak ditemukan di /Users/ammarbror/Documents/Obsidian Vault. Buat dulu lalu jalankan ulang." Jangan menulis file apa pun.
+1. **Deteksi Vault (Dinamis)**: tentukan lokasi `VAULT` dengan urutan prioritas:
+   a. Gunakan environment variable `OBSIDIAN_VAULT_PATH` atau `OBSIDIAN_VAULT` jika diset.
+   b. Cek lokasi standar: `~/Documents/Obsidian Vault` atau `~/Obsidian`.
+   c. Jika tidak ditemukan, tanya lokasi folder Obsidian Vault ke user secara langsung sebelum menyimpan.
+   Periksa apakah folder vault ada. Jika TIDAK ada setelah ditanya, abort graceful dengan pesan: "Obsidian vault tidak ditemukan di path yang ditentukan. Mohon buat folder vault terlebih dahulu." Jangan menulis file apa pun.
 
 2. **Folder proyek**: buat `<VAULT>/01 Projects/PRDs/<Project>/` dengan `<Project>` adalah nama produk yang DI-SANITASI. Algoritma sanitasi (persis, urut begini):
    1. `trim` - buang spasi di awal dan akhir.
