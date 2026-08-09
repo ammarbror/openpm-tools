@@ -25,7 +25,7 @@ export interface ReviewResult {
 }
 
 export interface BitbucketConfig {
-  email: string;
+  email?: string;
   apiToken: string;
 }
 

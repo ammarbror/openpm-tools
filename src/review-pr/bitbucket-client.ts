@@ -4,13 +4,16 @@ import type { PRInfo, PRMetadata } from './types.ts';
 // Helpers
 // ---------------------------------------------------------------------------
 
-function buildAuth(config: { email: string; apiToken: string }): string {
-  return `Basic ${Buffer.from(`${config.email}:${config.apiToken}`).toString('base64')}`;
+function buildAuth(config: { email?: string; apiToken: string }): string {
+  if (config.email && config.email.trim().length > 0) {
+    return `Basic ${Buffer.from(`${config.email}:${config.apiToken}`).toString('base64')}`;
+  }
+  return config.apiToken.startsWith('Bearer ') ? config.apiToken : `Bearer ${config.apiToken}`;
 }
 
 async function apiFetch(
   url: string,
-  config: { email: string; apiToken: string },
+  config: { email?: string; apiToken: string },
   options: RequestInit = {},
 ): Promise<Response> {
   const auth = buildAuth(config);
@@ -38,7 +41,7 @@ function prUrl(info: PRInfo): string {
  */
 export async function fetchPRInfo(
   info: PRInfo,
-  config: { email: string; apiToken: string },
+  config: { email?: string; apiToken: string },
 ): Promise<PRMetadata> {
   const res = await apiFetch(prUrl(info), config);
   const data = await res.json();
@@ -58,7 +61,7 @@ export async function fetchPRInfo(
  */
 export async function fetchPRDiff(
   info: PRInfo,
-  config: { email: string; apiToken: string },
+  config: { email?: string; apiToken: string },
 ): Promise<string> {
   const res = await apiFetch(`${prUrl(info)}/diff`, config, {
     headers: { Accept: 'application/json' } as Record<string, string>,
@@ -71,7 +74,7 @@ export async function fetchPRDiff(
  */
 export async function fetchPRCommits(
   info: PRInfo,
-  config: { email: string; apiToken: string },
+  config: { email?: string; apiToken: string },
 ): Promise<string[]> {
   const res = await apiFetch(`${prUrl(info)}/commits`, config);
   const data = await res.json();
@@ -84,7 +87,7 @@ export async function fetchPRCommits(
  */
 export async function postGeneralComment(
   info: PRInfo,
-  config: { email: string; apiToken: string },
+  config: { email?: string; apiToken: string },
   content: string,
 ): Promise<void> {
   const res = await apiFetch(`${prUrl(info)}/comments`, config, {
@@ -101,7 +104,7 @@ export async function postGeneralComment(
  */
 export async function postInlineComment(
   info: PRInfo,
-  config: { email: string; apiToken: string },
+  config: { email?: string; apiToken: string },
   content: string,
   file: string,
   line: number,

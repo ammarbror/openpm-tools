@@ -58,19 +58,15 @@ void describe('loadBitbucketConfig', () => {
     assert.deepStrictEqual(config, { email: 'e@e.com', apiToken: 'tok' });
   });
 
-  void it('throws a clear error when BITBUCKET_EMAIL is missing', () => {
+  void it('allows missing BITBUCKET_EMAIL for Bearer API token auth', () => {
     delete process.env.BITBUCKET_EMAIL;
-    assert.throws(() => loadBitbucketConfig(), /BITBUCKET_EMAIL/);
+    const config = loadBitbucketConfig();
+    assert.deepStrictEqual(config, { email: undefined, apiToken: 'tok' });
   });
 
   void it('throws a clear error when BITBUCKET_API_TOKEN is missing', () => {
     delete process.env.BITBUCKET_API_TOKEN;
     assert.throws(() => loadBitbucketConfig(), /BITBUCKET_API_TOKEN/);
-  });
-
-  void it('throws when BITBUCKET_EMAIL is an empty string', () => {
-    process.env.BITBUCKET_EMAIL = '';
-    assert.throws(() => loadBitbucketConfig(), /BITBUCKET_EMAIL/);
   });
 });
 

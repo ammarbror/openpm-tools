@@ -18,18 +18,13 @@ export function loadBitbucketConfig(): BitbucketConfig {
   const email = process.env.BITBUCKET_EMAIL;
   const apiToken = process.env.BITBUCKET_API_TOKEN;
 
-  if (!email) {
-    throw new Error(
-      'Missing BITBUCKET_EMAIL environment variable. Set BITBUCKET_EMAIL in .env or export it.',
-    );
-  }
   if (!apiToken) {
     throw new Error(
       'Missing BITBUCKET_API_TOKEN environment variable. Set BITBUCKET_API_TOKEN in .env or export it.',
     );
   }
 
-  return { email, apiToken };
+  return { email: email || undefined, apiToken };
 }
 
 /**
