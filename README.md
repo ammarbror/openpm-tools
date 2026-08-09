@@ -38,7 +38,8 @@ npm install
 
 # 3. Configure credentials
 cp .env.example .env
-# Fill in BITBUCKET_EMAIL, BITBUCKET_API_TOKEN, JIRA_EMAIL, JIRA_API_TOKEN, JIRA_URL, JIRA_PROJECT_KEY, OBSIDIAN_VAULT_PATH
+# Fill in BITBUCKET_API_TOKEN, JIRA_EMAIL, JIRA_API_TOKEN, JIRA_URL, JIRA_PROJECT_KEY, OBSIDIAN_VAULT_PATH
+# (BITBUCKET_EMAIL is optional when using Bitbucket API Tokens with Bearer auth)
 ```
 
 ---
