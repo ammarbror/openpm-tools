@@ -206,6 +206,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 {
                   prUrl: reviewData.prUrl,
                   prInfo: reviewData.prInfo,
+                  metadata: reviewData.metadata,
                   jiraKeys: reviewData.jiraKeys,
                   diff: reviewData.diff,
                   reviewPrompt: reviewData.reviewPrompt,
@@ -220,7 +221,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'post_pr_review': {
         const prUrl = String(toolArgs.prUrl);
-        const findings = toolArgs.findings as ReviewFinding[];
+        const rawFindings = (toolArgs.findings || []) as any[];
+        const findings: ReviewFinding[] = rawFindings.map((f: any) => ({
+          severity: f.severity || 'BUG',
+          file: f.file || 'unknown',
+          line: f.line != null ? Number(f.line) : undefined,
+          message: f.message || [f.title, f.description, f.suggestion].filter(Boolean).join(' - ') || 'Issue detected',
+        }));
+
         const bbConfig = loadBitbucketConfig();
         const jiraConfig = loadJiraConfig();
         const reviewData = await fetchReviewData(prUrl);
@@ -228,7 +236,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         await postBitbucketComments(reviewData.prInfo, bbConfig, findings);
         const jiraResults = await postJiraComments(
           prUrl,
-          reviewData.prInfo.title,
+          reviewData.metadata.title,
           reviewData.jiraKeys,
           jiraConfig,
           findings

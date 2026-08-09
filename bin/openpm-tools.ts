@@ -180,12 +180,13 @@ async function main() {
           console.log(JSON.stringify({
             prUrl: reviewData.prUrl,
             prInfo: reviewData.prInfo,
+            metadata: reviewData.metadata,
             jiraKeys: reviewData.jiraKeys,
             diff: reviewData.diff,
             reviewPrompt: reviewData.reviewPrompt,
           }, null, 2));
         } else {
-          console.log(`=== PR Metadata ===\nTitle: ${reviewData.prInfo.title}\nJira Keys: ${reviewData.jiraKeys.join(', ')}\n`);
+          console.log(`=== PR Metadata ===\nTitle: ${reviewData.metadata.title}\nJira Keys: ${reviewData.jiraKeys.join(', ')}\n`);
           console.log(`=== System Review Prompt ===\n${reviewData.reviewPrompt}`);
         }
         break;
@@ -199,20 +200,27 @@ async function main() {
           process.exit(1);
         }
 
-        let findings: ReviewFinding[];
+        let rawFindings: any[];
         if (findingsRaw.startsWith('[') || findingsRaw.startsWith('{')) {
-          findings = JSON.parse(findingsRaw);
+          rawFindings = JSON.parse(findingsRaw);
         } else {
           const fs = await import('fs');
-          findings = JSON.parse(fs.readFileSync(findingsRaw, 'utf-8'));
+          rawFindings = JSON.parse(fs.readFileSync(findingsRaw, 'utf-8'));
         }
+
+        const findings: ReviewFinding[] = (Array.isArray(rawFindings) ? rawFindings : [rawFindings]).map((f: any) => ({
+          severity: f.severity || 'BUG',
+          file: f.file || 'unknown',
+          line: f.line != null ? Number(f.line) : undefined,
+          message: f.message || [f.title, f.description, f.suggestion].filter(Boolean).join(' - ') || 'Issue detected',
+        }));
 
         const bbConfig = loadBitbucketConfig();
         const jiraConfig = loadJiraConfig();
         const reviewData = await fetchReviewData(prUrl);
 
         await postBitbucketComments(reviewData.prInfo, bbConfig, findings);
-        const jiraResults = await postJiraComments(prUrl, reviewData.prInfo.title, reviewData.jiraKeys, jiraConfig, findings);
+        const jiraResults = await postJiraComments(prUrl, reviewData.metadata.title, reviewData.jiraKeys, jiraConfig, findings);
 
         if (isJson) {
           console.log(JSON.stringify({ success: true, jiraResults }, null, 2));
