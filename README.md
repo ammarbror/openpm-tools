@@ -139,6 +139,35 @@ Add to your Antigravity MCP configuration:
 
 ---
 
+## Recommended Deployment Pattern: Combined / Hybrid Agent Architecture
+
+For production setups, a **Combined (Hybrid)** architecture is recommended:
+
+```
+                          ┌───────────────────────────┐
+                          │   Shared openpm-tools     │
+                          │   (MCP Server & CLI)      │
+                          └─────────────┬─────────────┘
+                                        │
+           ┌────────────────────────────┴────────────────────────────┐
+           ▼                                                         ▼
+┌──────────────────────────────┐                         ┌──────────────────────────────┐
+│       Interactive Dev        │                         │    Background Automation     │
+│   (OpenCode / Claude Code)   │                         │  (Hermes-Agent / OpenClaw)   │
+├──────────────────────────────┤                         ├──────────────────────────────┤
+│ - Direct CLI & slash cmds    │                         │ - Telegram / Slack / Webhook │
+│ - Interactive 9-step PRDD    │                         │ - Automated sprint triggers  │
+│ - Local terminal workflows   │                         │ - PR review on git push/hook │
+└──────────────────────────────┘                         └──────────────────────────────┘
+```
+
+- **OpenCode / Claude Code (Interactive)**: Use for interactive development, running slash commands (`/create-prdd`, `/review-pr`), and pair-programming in local terminal/IDE.
+- **Hermes-Agent / OpenClaw (Autonomous / Background)**: Connect via `openpm-tools` MCP server or CLI to handle background triggers (e.g. automatically creating Jira tickets from Slack messages, sending automated sprint reports to Telegram, or auditing PRs on webhooks).
+
+Both agent tiers share the same `.env` credentials and `openpm-tools` core engine.
+
+---
+
 ## Standalone CLI Usage
 
 You can also run any command directly from terminal:
