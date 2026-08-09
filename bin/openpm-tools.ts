@@ -1,0 +1,273 @@
+#!/usr/bin/env npx tsx
+import 'dotenv/config';
+import { runFromEnv as runCreateTicket } from '../src/create-ticket/index.ts';
+import { runFromEnv as runEditTicket } from '../src/edit-ticket/index.ts';
+import { runFromEnv as runReleaseWorkflow } from '../src/release-workflow/index.ts';
+import { runFromEnv as runSprintReport } from '../src/sprint-report/index.ts';
+import {
+  fetchReviewData,
+  postBitbucketComments,
+  postJiraComments,
+  loadBitbucketConfig,
+  loadJiraConfig,
+} from '../src/review-pr/index.ts';
+import type { ReviewFinding } from '../src/review-pr/types.ts';
+
+function printHelp() {
+  console.log(`
+openpm-tools CLI - AI PM Toolkit for Jira & Bitbucket
+
+Usage:
+  npx openpm-tools <command> [options]
+
+Commands:
+  create-ticket <summary> [options]
+    --type <task|bug|story>       Issue type (default: auto-detected or Task)
+    --description <text>          Issue description
+    --assignee <name>             Assignee display name
+    --assignee-id <accountId>    Assignee Jira account ID
+    --sprint <sprintName>        Target sprint name
+    --epic <epicKey>              Parent Epic key (e.g. KAIRA-100)
+    --story-points <num>         Story points estimation
+
+  edit-ticket <issueKey> [options]
+    --summary <text>              New summary
+    --description <text>          New description
+    --assignee <name>             Assignee display name
+    --assignee-id <accountId>    Assignee Jira account ID
+
+  release-workflow [options]
+    --version-name <name>        Custom version name
+
+  sprint-report [options]
+    --sprint <sprintName>        Target sprint name
+    --export-html                 Export HTML burndown chart
+
+  fetch-pr-review <prUrl>
+    Fetch PR metadata, diff, and review prompt for LLM analysis.
+
+  post-pr-review <prUrl> <findingsJsonFileOrString>
+    Post LLM findings to Bitbucket PR and linked Jira issues.
+
+  create-prdd [productName]
+    Print guidelines for creating a bilingual PRDD (Obsidian Vault).
+
+Global Options:
+  --json                          Output raw JSON result
+  --help, -h                      Show this help message
+`);
+}
+
+function parseArgs(args: string[]) {
+  const flags: Record<string, string | boolean> = {};
+  const positional: string[] = [];
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg.startsWith('--')) {
+      const key = arg.slice(2);
+      const next = args[i + 1];
+      if (next && !next.startsWith('--')) {
+        flags[key] = next;
+        i++;
+      } else {
+        flags[key] = true;
+      }
+    } else if (arg.startsWith('-')) {
+      flags[arg.slice(1)] = true;
+    } else {
+      positional.push(arg);
+    }
+  }
+
+  return { flags, positional };
+}
+
+async function main() {
+  const rawArgs = process.argv.slice(2);
+  if (rawArgs.length === 0 || rawArgs.includes('--help') || rawArgs.includes('-h')) {
+    printHelp();
+    process.exit(0);
+  }
+
+  const command = rawArgs[0];
+  const { flags, positional } = parseArgs(rawArgs.slice(1));
+  const isJson = Boolean(flags.json);
+
+  try {
+    switch (command) {
+      case 'create-ticket': {
+        const summary = positional[0] || (flags.summary as string);
+        if (!summary) {
+          console.error('Error: summary is required for create-ticket');
+          process.exit(1);
+        }
+        const result = await runCreateTicket({
+          summary,
+          description: (flags.description as string) || undefined,
+          issueType: (flags.type as string) || undefined,
+          assignee: (flags.assignee as string) || undefined,
+          assigneeAccountId: (flags['assignee-id'] as string) || undefined,
+          sprintName: (flags.sprint as string) || undefined,
+          parentEpicKey: (flags.epic as string) || undefined,
+          storyPoints: flags['story-points'] ? Number(flags['story-points']) : undefined,
+        });
+        if (isJson) {
+          console.log(JSON.stringify({ success: true, message: result }, null, 2));
+        } else {
+          console.log(result);
+        }
+        break;
+      }
+
+      case 'edit-ticket': {
+        const issueKey = positional[0] || (flags.key as string);
+        if (!issueKey) {
+          console.error('Error: issueKey is required for edit-ticket');
+          process.exit(1);
+        }
+        const result = await runEditTicket({
+          issueKey,
+          summary: (flags.summary as string) || undefined,
+          description: (flags.description as string) || undefined,
+          assigneeName: (flags.assignee as string) || undefined,
+          assigneeAccountId: (flags['assignee-id'] as string) || undefined,
+        });
+        if (isJson) {
+          console.log(JSON.stringify({ success: true, message: result }, null, 2));
+        } else {
+          console.log(result);
+        }
+        break;
+      }
+
+      case 'release-workflow': {
+        const versionName = (flags['version-name'] as string) || undefined;
+        const result = await runReleaseWorkflow(versionName ? { versionName } : undefined);
+        if (isJson) {
+          console.log(JSON.stringify({ success: true, data: result }, null, 2));
+        } else {
+          console.log(`Release workflow completed for version: ${result.version?.name || 'N/A'}`);
+          console.log(`Issues processed: ${result.issueCount}`);
+          if (result.releaseNotesPath) {
+            console.log(`Release notes written to: ${result.releaseNotesPath}`);
+          }
+        }
+        break;
+      }
+
+      case 'sprint-report': {
+        const result = await runSprintReport({
+          sprintName: (flags.sprint as string) || undefined,
+          exportHtml: flags['export-html'] ? true : undefined,
+        });
+        if (isJson) {
+          console.log(JSON.stringify({ success: true, markdown: result }, null, 2));
+        } else {
+          console.log(result);
+        }
+        break;
+      }
+
+      case 'fetch-pr-review': {
+        const prUrl = positional[0] || (flags.url as string);
+        if (!prUrl) {
+          console.error('Error: PR URL is required for fetch-pr-review');
+          process.exit(1);
+        }
+        const reviewData = await fetchReviewData(prUrl);
+        if (isJson) {
+          console.log(JSON.stringify({
+            prUrl: reviewData.prUrl,
+            prInfo: reviewData.prInfo,
+            jiraKeys: reviewData.jiraKeys,
+            diff: reviewData.diff,
+            reviewPrompt: reviewData.reviewPrompt,
+          }, null, 2));
+        } else {
+          console.log(`=== PR Metadata ===\nTitle: ${reviewData.prInfo.title}\nJira Keys: ${reviewData.jiraKeys.join(', ')}\n`);
+          console.log(`=== System Review Prompt ===\n${reviewData.reviewPrompt}`);
+        }
+        break;
+      }
+
+      case 'post-pr-review': {
+        const prUrl = positional[0];
+        const findingsRaw = positional[1] || (flags.findings as string);
+        if (!prUrl || !findingsRaw) {
+          console.error('Error: PR URL and findings JSON are required for post-pr-review');
+          process.exit(1);
+        }
+
+        let findings: ReviewFinding[];
+        if (findingsRaw.startsWith('[') || findingsRaw.startsWith('{')) {
+          findings = JSON.parse(findingsRaw);
+        } else {
+          const fs = await import('fs');
+          findings = JSON.parse(fs.readFileSync(findingsRaw, 'utf-8'));
+        }
+
+        const bbConfig = loadBitbucketConfig();
+        const jiraConfig = loadJiraConfig();
+        const reviewData = await fetchReviewData(prUrl);
+
+        await postBitbucketComments(reviewData.prInfo, bbConfig, findings);
+        const jiraResults = await postJiraComments(prUrl, reviewData.prInfo.title, reviewData.jiraKeys, jiraConfig, findings);
+
+        if (isJson) {
+          console.log(JSON.stringify({ success: true, jiraResults }, null, 2));
+        } else {
+          console.log('✅ Review comments posted successfully to Bitbucket & Jira.');
+        }
+        break;
+      }
+
+      case 'create-prdd': {
+        const prodName = positional[0] || (flags.name as string) || 'Product';
+        const guide = {
+          command: 'create-prdd',
+          productName: prodName,
+          description: 'Bilingual Product Requirements & Design Document (PRDD) generator for Obsidian',
+          sections: [
+            '1. Overview & Problem Statement',
+            '2. Goals & Success Metrics',
+            '3. User Stories / Use Cases',
+            '4. Functional Requirements (MoSCoW)',
+            '5. System Architecture (Mermaid flowchart TD)',
+            '6. Database Schema / ERD (Mermaid erDiagram)',
+            '7. API Contract (Endpoints & Mermaid sequenceDiagram)',
+            '8. Non-Functional Requirements',
+            '9. Dependencies & Risks'
+          ],
+          outputs: [
+            `PRDD - ${prodName} (ID).md`,
+            `PRDD - ${prodName} (EN).md`
+          ]
+        };
+        if (isJson) {
+          console.log(JSON.stringify(guide, null, 2));
+        } else {
+          console.log(`=== PRDD Creation Guide for "${prodName}" ===`);
+          console.log('Run via AI Agent (OpenCode / Claude Code / Hermes / OpenClaw / Antigravity):');
+          console.log('Use slash command /create-prdd to start 9-section bilingual interview.');
+        }
+        break;
+      }
+
+      default:
+        console.error(`Unknown command: ${command}`);
+        printHelp();
+        process.exit(1);
+    }
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (isJson) {
+      console.error(JSON.stringify({ success: false, error: message }, null, 2));
+    } else {
+      console.error(`❌ Error: ${message}`);
+    }
+    process.exit(1);
+  }
+}
+
+main();

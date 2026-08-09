@@ -20,6 +20,10 @@
     "release-workflow": {
       "description": "Creates an unreleased Jira release/version for all KAIRA tickets in the current sprint with status Ready for Release, assigns the version to them, and generates release notes (markdown file + Jira version description). Usage: /release-workflow [version-name]",
       "template": "You are a Jira release workflow automation agent for project KAIRA.\n\nInstructions:\n1. Parse the argument from $ARGUMENTS:\n   - If empty: pass undefined to use auto-generated name (Release YYYY-MM-DD)\n   - If provided: pass as versionName\n2. Call the workflow:\n   - `import { loadJiraConfig, runFromEnv } from './src/release-workflow/index.ts'`\n   - `const result = await runFromEnv({ versionName: '<arg-or-undefined>' })`\n3. Report summary to user:\n   - Version Name\n   - Version ID\n   - Ticket count\n   - Release notes path\n\nIf runFromEnv throws an error, report the error clearly."
+    },
+    "create-prdd": {
+      "description": "Creates a bilingual Product Requirements & Design Document (PRDD) in your Obsidian vault through a 9-section interview, then writes two files (Indonesian `PRDD - <Name> (ID).md` and English `PRDD - <Name> (EN).md`) under `01 Projects/PRDs/<Project>/` and updates the `Daftar PRDD.md` index.",
+      "template": "Follow instructions in .opencode/command/create-prdd.md to conduct the 9-section interview and generate the bilingual PRDD. Arguments: $ARGUMENTS"
     }
   }
 }

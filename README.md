@@ -1,28 +1,35 @@
 # openpm-tools
 
-OpenCode slash commands that bridge Jira and Bitbucket: create Jira tickets and run automated PR reviews that cross-reference Jira issues — all from within your OpenCode chat session.
+AI Product Manager (PM) toolkit for Jira & Bitbucket: create Jira tickets, generate bilingual PRDDs in Obsidian, generate sprint reports, manage release notes, update tickets, and run automated PR reviews — natively integrated with **OpenCode**, **Claude Code**, **Hermes-Agent**, **OpenClaw**, and **Antigravity** (via MCP Server & CLI).
+
+---
 
 ## Features
 
-- **`/review-pr <bitbucket-pr-url>`** — Fetches the PR diff, runs an LLM-based review (CRITICAL/HIGH/BUG only), posts findings as Bitbucket comments + inline annotations, and cross-references linked Jira issues with a review summary.
-- **`/create-ticket <work-type>: <description>`** — Creates a Jira ticket and assigns it to the current active sprint. Supports `task:`, `bug:`, `story:` (or `feature:`) prefixes; auto-detects work type from description when no prefix is given. Descriptions are automatically wrapped in structured templates with headings, acceptance criteria, and definition of done.
-- **`/edit-ticket <issue-key> [summary: ...] [description: ...] [assign: ...]`** — Updates an existing Jira ticket's summary, description, or assignee without leaving your chat session.
+- **`/review-pr` / `fetch_pr_review` & `post_pr_review`** — Fetches PR diffs from Bitbucket, generates structured review prompts, posts inline + summary findings to Bitbucket, and cross-references linked Jira issues.
+- **`/create-ticket` / `create_ticket`** — Creates a Jira ticket assigned to the active sprint with auto-structured templates (Task, Bug, Story, Epic, Story Points, Assignee).
+- **`/create-prdd` / `create_prdd`** — Conducts a 9-section interview to generate a bilingual Product Requirements & Design Document (Bahasa Indonesia `PRDD - <Name> (ID).md` + English `PRDD - <Name> (EN).md`) in your Obsidian vault.
+- **`/edit-ticket` / `edit_ticket`** — Updates summary, description, or assignee on existing Jira tickets.
+- **`/release-workflow` / `release_workflow`** — Creates Jira release versions for Ready for Release tickets and generates markdown release notes.
+- **`/sprint-report` / `sprint_report`** — Generates complete sprint health reports with burndown metrics, assignee distribution, and HTML export.
+
+---
 
 ## Getting Started
 
 ### Prerequisites
 
-- [OpenCode](https://opencode.ai) — the CLI where the slash commands run.
-- Node.js 20+ (for running the automation scripts).
-- Atlassian credentials:
-  - **Bitbucket** — [API token](https://bitbucket.org/account/settings/app-passwords/) (app passwords deprecated June 2026).
-  - **Jira** — [API token](https://id.atlassian.com/manage-profile/security/api-tokens).
-  - Jira URL (e.g. `https://your-domain.atlassian.net`) and project key.
+- Node.js 20+
+- Atlassian credentials (for Jira/Bitbucket features):
+  - **Bitbucket API token** ([App Passwords](https://bitbucket.org/account/settings/app-passwords/))
+  - **Jira API token** ([API Tokens](https://id.atlassian.com/manage-profile/security/api-tokens))
+  - Jira URL & Project Key
+- Obsidian Vault (for `/create-prdd`)
 
 ### Setup
 
 ```bash
-# 1. Clone into your OpenCode workspace
+# 1. Clone repo
 git clone https://github.com/ammarbror/openpm-tools.git
 cd openpm-tools
 
@@ -31,127 +38,172 @@ npm install
 
 # 3. Configure credentials
 cp .env.example .env
-# Edit .env with your real tokens:
-#   BITBUCKET_EMAIL, BITBUCKET_API_TOKEN
-#   JIRA_EMAIL, JIRA_API_TOKEN, JIRA_URL, JIRA_PROJECT_KEY
+# Fill in BITBUCKET_EMAIL, BITBUCKET_API_TOKEN, JIRA_EMAIL, JIRA_API_TOKEN, JIRA_URL, JIRA_PROJECT_KEY
 ```
 
-> **Never commit `.env`.** It's git-ignored. Use `.env.example` as a template.
+---
 
-### OpenCode Integration
+## Multi-Agent Integration Guide
 
-The project is already configured for OpenCode via `opencode.json`. Once cloned into a workspace OpenCode has access to, the `/review-pr`, `/create-ticket`, and `/edit-ticket` commands are automatically available.
+### 1. OpenCode
+Pre-configured via `opencode.json` and `.opencode/command/`. Just clone into your workspace directory.
+Commands automatically registered:
+- `/review-pr <bitbucket-pr-url>`
+- `/create-ticket <summary>`
+- `/create-prdd <product-name>`
+- `/edit-ticket <issueKey>`
+- `/sprint-report`
+- `/release-workflow`
 
-The `opencode.json` config registers each command with:
-- A **description** shown in OpenCode's command list.
-- A **template** prompt that tells the OpenCode agent how to execute the task (which functions to call, how to parse arguments, what to return).
+### 2. Claude Code
+Supports both **MCP Server** and **Native Skills**.
 
-No additional OpenCode configuration is needed — the commands Just Work™.
+#### Option A: MCP Server (Recommended)
+Add to your `~/.claude.json` or project `.mcp.json`:
 
-## Usage
-
-### `/review-pr`
-
-```
-/review-pr https://bitbucket.org/myworkspace/myrepo/pull-requests/42
-```
-
-What happens:
-1. Parses the Bitbucket PR URL to extract workspace, repo, and PR number.
-2. Fetches PR metadata (title, description, source branch) and the unified diff.
-3. Extracts Jira issue keys (e.g. `KAIRA-123`) from the PR title, description, and commit messages.
-4. Builds a structured review prompt and sends it to the LLM for analysis.
-5. The LLM returns findings at three severity levels: **CRITICAL** (security), **HIGH** (logic errors), **BUG** (definite bugs). Style/performance/architecture suggestions are excluded.
-6. Posts a grouped summary comment on the Bitbucket PR and inline comments on affected lines.
-7. If Jira issues were detected, posts cross-reference comments on each Jira issue (with findings summary) and optionally transitions the issue to "Request Change".
-
-### `/create-ticket`
-
-```
-/create-ticket task: Add error logging to the payment service
-/create-ticket bug: Null pointer exception when user submits empty form
-/create-ticket story: Allow users to export reports as CSV
-```
-
-What happens:
-1. Detects the work type from the prefix (`task:`, `bug:`, `story:`/`feature:`) or infers it from the description.
-2. Strips the prefix and generates a concise summary (max ~80 chars).
-3. Creates the issue in the configured Jira project.
-4. Finds the current active sprint (or next open sprint) and assigns the ticket to it.
-5. The description is automatically wrapped in a structured template based on work type:
-   - **Task** — Description → Technical Details → Definition of Done → Notes
-   - **Story** — User Story → Acceptance Criteria → Additional Context
-   - **Bug** — Description → Steps to Reproduce → Expected/Actual → Environment → Screenshots
-6. Returns the issue key, sprint name, board name, work type, and summary.
-
-### `/edit-ticket`
-
-```
-/edit-ticket KAIRA-363 description: Add better acceptance criteria
-/edit-ticket KAIRA-363 assign: aulia rafi
-/edit-ticket KAIRA-363 summary: New title for the ticket
+```json
+{
+  "mcpServers": {
+    "openpm-tools": {
+      "command": "npx",
+      "args": ["tsx", "/path/to/openpm-tools/src/mcp/index.ts"],
+      "env": {
+        "BITBUCKET_EMAIL": "your-email@example.com",
+        "BITBUCKET_API_TOKEN": "your-token",
+        "JIRA_EMAIL": "your-email@example.com",
+        "JIRA_API_TOKEN": "your-jira-token",
+        "JIRA_URL": "https://your-domain.atlassian.net",
+        "JIRA_PROJECT_KEY": "PROJ"
+      }
+    }
+  }
+}
 ```
 
-What happens:
-1. Parses the issue key and optional fields (summary, description, assignee).
-2. If assignee is provided as a name, resolves it to a Jira account ID via `searchUsers()`.
-3. Calls the Jira API to update only the provided fields (partial update).
-4. Returns what was updated and the current issue status.
+#### Option B: Native Skills
+This repo contains pre-packaged skills in `.claude/skills/`:
+- `.claude/skills/create-ticket`
+- `.claude/skills/create-prdd`
+- `.claude/skills/edit-ticket`
+- `.claude/skills/release-workflow`
+- `.claude/skills/sprint-report`
+- `.claude/skills/review-pr`
+
+### 3. Hermes-Agent
+Hermes-Agent can use `openpm-tools` via MCP or CLI tool calls.
+
+**Via MCP (`~/.hermes/mcp.json` or agent config):**
+```json
+{
+  "mcpServers": {
+    "openpm-tools": {
+      "command": "npx",
+      "args": ["tsx", "/path/to/openpm-tools/src/mcp/index.ts"]
+    }
+  }
+}
+```
+
+**Via CLI:**
+Instruct Hermes to run `npx openpm-tools <command> [options]`.
+
+### 4. OpenClaw
+Add `openpm-tools` to your OpenClaw tool definition using stdio MCP:
+
+```json
+{
+  "tools": [
+    {
+      "type": "mcp",
+      "name": "openpm-tools",
+      "command": "npx",
+      "args": ["tsx", "/path/to/openpm-tools/src/mcp/index.ts"]
+    }
+  ]
+}
+```
+
+### 5. Antigravity
+Add to your Antigravity MCP configuration:
+
+```json
+{
+  "mcpServers": {
+    "openpm-tools": {
+      "command": "npx",
+      "args": ["tsx", "/path/to/openpm-tools/src/mcp/index.ts"]
+    }
+  }
+}
+```
+
+---
+
+## Standalone CLI Usage
+
+You can also run any command directly from terminal:
+
+```bash
+# Create Jira ticket
+npx openpm-tools create-ticket "Fix payment gateway timeout" --type bug --sprint "Sprint 12" --story-points 3
+
+# View PRDD creation guide
+npx openpm-tools create-prdd "MyApp"
+
+# Edit ticket
+npx openpm-tools edit-ticket KAIRA-123 --summary "Updated summary" --assignee "Ammar"
+
+# Run release workflow
+npx openpm-tools release-workflow --version-name "v1.5.0"
+
+# Generate sprint report
+npx openpm-tools sprint-report --export-html
+
+# Fetch PR diff for LLM review
+npx openpm-tools fetch-pr-review "https://bitbucket.org/myworkspace/myrepo/pull-requests/42" --json
+
+# Post PR review findings
+npx openpm-tools post-pr-review "https://bitbucket.org/myworkspace/myrepo/pull-requests/42" findings.json
+```
+
+---
 
 ## Architecture
 
 ```
-src/
-├── create-ticket/
-│   └── index.ts           # createTicketWorkflow() — issue creation + sprint assignment + description templates
-├── edit-ticket/
-│   └── index.ts           # editTicketWorkflow() — update summary, description, assignee on existing tickets
-└── review-pr/
-    ├── index.ts            # fetchReviewData(), postBitbucketComments(), postJiraComments()
-    ├── types.ts            # TypeScript interfaces (PRInfo, ReviewFinding, configs...)
-    ├── url-parser.ts       # parsePRURL() — Bitbucket PR URL → PRInfo
-    ├── bitbucket-client.ts # Bitbucket API: fetch PR info, diff, commits, post comments
-    ├── jira-client.ts      # Jira API: create/update issues, find boards/sprints, post comments, transitions, ADF formatting
-    ├── jira-detector.ts    # extractJiraKeys() — regex scan for Jira issue keys in text
-    ├── prompts.ts          # Review system prompt + buildReviewPrompt() with diff injection
-    └── e2e-test.ts         # End-to-end test exercising the full workflow
+openpm-tools/
+├── bin/
+│   └── openpm-tools.ts      # Unified CLI runner (Node/npm bin)
+├── src/
+│   ├── mcp/
+│   │   └── index.ts         # Stdio MCP Server (Claude Code, Antigravity, OpenClaw, Hermes)
+│   ├── create-ticket/
+│   ├── edit-ticket/
+│   ├── release-workflow/
+│   ├── sprint-report/
+│   └── review-pr/
+├── .claude/skills/          # Claude Code skill manifests
+├── .opencode/command/       # OpenCode command definitions (create-prdd.md)
+└── opencode.json            # OpenCode command registrations
 ```
 
-### Data flow
+---
 
-```
-User: /review-pr <url>
-  │
-  ├─► parsePRURL(url)              → {workspace, repoSlug, prNumber}
-  ├─► loadBitbucketConfig() + loadJiraConfig()  ← .env
-  ├─► fetchPRInfo() + fetchPRDiff()              ← Bitbucket API (parallel)
-  ├─► extractJiraKeys(metadata)     → ["KAIRA-123", ...]
-  ├─► buildReviewPrompt(diff, ...)  → structured LLM prompt
-  ├─► LLM reviews diff              → ReviewFinding[]
-  ├─► postBitbucketComments()       → grouped + inline comments
-  └─► postJiraComments()            → cross-reference on each Jira issue
-```
-
-## Development
+## Development & Testing
 
 ```bash
-# Run all unit tests (uses Node.js built-in test runner + tsx)
-npx tsx --test src/**/*.test.ts
+# Run unit tests
+npm test
 
-# Run the end-to-end test (requires real .env credentials)
-npx tsx --test src/review-pr/e2e-test.ts
+# Run MCP server locally
+npm run mcp
+
+# Run CLI locally
+npm run cli -- --help
 ```
 
-The project uses:
-- **TypeScript** with `tsx` for direct execution (no build step).
-- **Node.js native `fetch`** for all API calls (Node 20+).
-- **Node.js `node:test`** for testing.
-- No external runtime dependencies.
+---
 
-## Security
+## License
 
-- **`.env` is git-ignored** — credentials stay on your machine.
-- **`.omo/` is git-ignored** — internal planning artifacts are not published.
-- API tokens are loaded from environment variables only, never hardcoded.
-- The review prompt explicitly forbids the LLM from outputting style/performance suggestions — only security and bug findings.
-- If a Jira issue has review findings, the PR review can optionally transition it to "Request Change" (configurable via `JIRA_REQUEST_CHANGE_STATUS` env var; defaults to `Request Change`).
+MIT
