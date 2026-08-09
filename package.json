@@ -1,5 +1,5 @@
 {
-  "name": "jira-and-bitbucket-automation",
+  "name": "openpm-tools",
   "private": true,
   "type": "module",
   "devDependencies": {

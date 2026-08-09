@@ -1,4 +1,4 @@
-# jira-and-bitbucket-automation
+# openpm-tools
 
 OpenCode slash commands that bridge Jira and Bitbucket: create Jira tickets and run automated PR reviews that cross-reference Jira issues — all from within your OpenCode chat session.
 
@@ -23,8 +23,8 @@ OpenCode slash commands that bridge Jira and Bitbucket: create Jira tickets and 
 
 ```bash
 # 1. Clone into your OpenCode workspace
-git clone https://github.com/ammarbror/jira-and-bitbucket-automation.git
-cd jira-and-bitbucket-automation
+git clone https://github.com/ammarbror/openpm-tools.git
+cd openpm-tools
 
 # 2. Install dependencies
 npm install
