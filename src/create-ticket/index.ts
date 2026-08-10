@@ -88,6 +88,21 @@ function hasTechIndicators(text: string): Record<string, boolean> {
 
 function storyTemplate(description: string): string {
   const body = description.trim();
+  if (!body) {
+    return [
+      'h3. User Story',
+      '[Isi deskripsi cerita pengguna, contoh: Sebagai <peran>, saya ingin <fitur> sehingga <manfaat>.]',
+      '',
+      'h3. Acceptance Criteria',
+      '- [ ] [Kriteria 1: Kondisi utama yang harus dipenuhi agar cerita dianggap selesai]',
+      '- [ ] [Kriteria 2: Penanganan edge case atau aturan bisnis]',
+      '- [ ] [Kriteria 3: Kebutuhan responsivitas/desain/performa jika ada]',
+      '',
+      'h3. Additional Context',
+      '- [Isi catatan tambahan, link Figma/PRD, ketergantungan tiket lain, atau pertanyaan pending]',
+    ].join('\n');
+  }
+
   const roles = extractRoles(body);
   const tech = hasTechIndicators(body);
 
@@ -156,6 +171,26 @@ function storyTemplate(description: string): string {
 
 function taskTemplate(description: string): string {
   const body = description.trim();
+  if (!body) {
+    return [
+      'h3. Description',
+      '[Isi deskripsi tugas teknis yang akan dikerjakan.]',
+      '',
+      'h3. Technical Details',
+      '- [Spesifikasikan modul, endpoint API, skema database, atau komponen yang terdampak]',
+      '- [Penjelasan arsitektur atau keputusan teknis yang diambil]',
+      '',
+      'h3. Definition of Done',
+      '- [ ] Code changes implemented per technical design',
+      '- [ ] Unit and/or integration tests cover modified code paths',
+      '- [ ] Manually verified on local/staging environment',
+      '- [ ] PR submitted for peer review with clear context',
+      '',
+      'h3. Notes',
+      '- [Isi item out-of-scope, potensi risiko, atau hal yang memerlukan verifikasi lanjut]',
+    ].join('\n');
+  }
+
   const tech = hasTechIndicators(body);
   const topics = extractTopics(body);
 
@@ -240,6 +275,26 @@ function taskTemplate(description: string): string {
 
 function epicTemplate(description: string): string {
   const body = description.trim();
+  if (!body) {
+    return [
+      'h3. Epic Description',
+      '[Isi gambaran besar inisiatif atau proyek ini.]',
+      '',
+      'h3. Goals / Objectives',
+      '- [ ] [Tujuan 1: Indikator keberhasilan utama dari epic ini]',
+      '- [ ] [Tujuan 2: Output/fitur utama yang diproduksi]',
+      '',
+      'h3. Key Initiatives',
+      '- [Isi daftar alur kerja atau inisiatif utama yang dinaungi epic ini]',
+      '',
+      'h3. Out of Scope',
+      '- [Daftar item yang secara eksplisit tidak dicakup dalam epic ini]',
+      '',
+      'h3. Dependencies & Risks',
+      '- [Penjelasan ketergantungan eksternal, blocker, atau risiko proyek]',
+    ].join('\n');
+  }
+
   const tech = hasTechIndicators(body);
   const topics = extractTopics(body);
 
@@ -300,6 +355,32 @@ function epicTemplate(description: string): string {
 
 function bugTemplate(description: string): string {
   const body = description.trim();
+  if (!body) {
+    return [
+      'h3. Description',
+      '[Isi penjelasan singkat mengenai masalah atau bug yang ditemukan.]',
+      '',
+      'h3. Steps to Reproduce',
+      '1. [Langkah 1: Navigasi ke halaman/endpoint bermasalah]',
+      '2. [Langkah 2: Lakukan tindakan spesifik yang memicu kesalahan]',
+      '3. [Langkah 3: Amati kegagalan yang terjadi]',
+      '',
+      'h3. Expected Behavior',
+      '- [Jelaskan hasil atau perilaku yang seharusnya terjadi]',
+      '',
+      'h3. Actual Behavior',
+      '- [Jelaskan hasil atau perilaku salah yang saat ini terjadi, sertakan error log jika ada]',
+      '',
+      'h3. Environment',
+      '- Environment (Staging / Production / Local):',
+      '- App / API Version / Commit:',
+      '- Device / OS / Browser:',
+      '',
+      'h3. Evidence',
+      '- [Lampirkan screenshot, video rekaman layar, atau log API/cURL]',
+    ].join('\n');
+  }
+
   const tech = hasTechIndicators(body);
 
   const lines = body.split('\n').map(l => l.trim()).filter(Boolean);
@@ -505,10 +586,10 @@ export async function createTicketWorkflow(
 
   const isEpic = params.issueType?.toLowerCase() === 'epic';
 
-  const description =
-    params.description
-      ? formatDescription(params.issueType, params.description)
-      : undefined;
+  const description = formatDescription(
+    params.issueType,
+    params.description ?? '',
+  );
 
   // Merge epic-specific custom fields with user-provided ones
   const epicFields = getEpicCustomFields(params.issueType, params.parentEpicKey);

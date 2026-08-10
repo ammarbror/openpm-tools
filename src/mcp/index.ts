@@ -24,12 +24,13 @@ import type { ReviewFinding } from '../review-pr/types.ts';
 const tools: Tool[] = [
   {
     name: 'create_ticket',
-    description: 'Create a Jira ticket in the current active sprint with structured description formatting',
+    description:
+      'Create a Jira ticket in the current active sprint. BEFORE calling, ALWAYS rewrite/improve the summary into a clear, concise, professional title (fix typos/grammar/wording, max ~80 chars, English). If no description is provided, write one yourself from your understanding of the summary; if you have no understanding, fill in the type-specific sections with placeholders plus an explanation of what each section should contain (Task: Description/Technical Details/Definition of Done/Notes; Bug: Description/Steps to Reproduce/Expected/Actual/Environment/Evidence; Story: User Story/Acceptance Criteria/Additional Context; Epic: Epic Description/Goals/Key Initiatives/Out of Scope/Dependencies).',
     inputSchema: {
       type: 'object',
       properties: {
-        summary: { type: 'string', description: 'Concise summary of the ticket' },
-        description: { type: 'string', description: 'Detailed description or criteria' },
+        summary: { type: 'string', description: 'Concise summary of the ticket (improve/rewrite it before passing)' },
+        description: { type: 'string', description: 'Detailed description or criteria; if omitted, derive it from the summary or fill with type-specific section placeholders' },
         issueType: { type: 'string', description: 'Issue type: Task, Bug, Story, Feature, Epic' },
         assignee: { type: 'string', description: 'Assignee display name' },
         assigneeAccountId: { type: 'string', description: 'Assignee Jira account ID' },
