@@ -61,20 +61,30 @@ Global Options:
 function parseArgs(args: string[]) {
   const flags: Record<string, string | boolean> = {};
   const positional: string[] = [];
+  const BOOLEAN_FLAGS = new Set(['llm', 'overwrite', 'json']);
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (arg.startsWith('--')) {
       const key = arg.slice(2);
-      const next = args[i + 1];
-      if (next && !next.startsWith('--')) {
-        flags[key] = next;
-        i++;
+      if (BOOLEAN_FLAGS.has(key)) {
+        flags[key] = true;
+      } else {
+        const next = args[i + 1];
+        if (next && !next.startsWith('--') && !next.startsWith('-')) {
+          flags[key] = next;
+          i++;
+        } else {
+          flags[key] = true;
+        }
+      }
+    } else if (arg.startsWith('-')) {
+      const key = arg.slice(1);
+      if (BOOLEAN_FLAGS.has(key)) {
+        flags[key] = true;
       } else {
         flags[key] = true;
       }
-    } else if (arg.startsWith('-')) {
-      flags[arg.slice(1)] = true;
     } else {
       positional.push(arg);
     }
