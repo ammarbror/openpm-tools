@@ -4,6 +4,7 @@ import { runFromEnv as runCreateTicket } from '../src/create-ticket/index.ts';
 import { runFromEnv as runEditTicket } from '../src/edit-ticket/index.ts';
 import { runFromEnv as runReleaseWorkflow } from '../src/release-workflow/index.ts';
 import { runFromEnv as runSprintReport } from '../src/sprint-report/index.ts';
+import { runFromEnv as runExtractKnowledge } from '../src/extract-knowledge/index.ts';
 import {
   fetchReviewData,
   postBitbucketComments,
@@ -51,6 +52,13 @@ Commands:
 
   create-prdd [productName]
     Print guidelines for creating a bilingual PRDD (Obsidian Vault).
+
+  extract-knowledge <file-or-folder> [options]
+    Convert document files into structured AI-friendly knowledge .md files.
+    --llm                         Use OpenAI-compatible LLM to enhance output
+    --out <dir>                   Custom output directory
+    --overwrite                   Overwrite target file if exists
+    --vault <path>                Custom Obsidian Vault path
 
 Global Options:
   --json                          Output raw JSON result
@@ -271,6 +279,24 @@ async function main() {
           console.log('Run via AI Agent (OpenCode / Claude Code / Hermes / OpenClaw / Antigravity):');
           console.log('Use slash command /create-prdd to start 9-section bilingual interview.');
         }
+        break;
+      }
+
+      case 'extract-knowledge': {
+        const source = positional[0] || (flags.source as string);
+        if (!source) {
+          console.error('Error: source file or folder path is required for extract-knowledge');
+          process.exit(1);
+        }
+        const result = await runExtractKnowledge({
+          source,
+          llm: Boolean(flags.llm),
+          out: (flags.out as string) || undefined,
+          vault: (flags.vault as string) || undefined,
+          overwrite: Boolean(flags.overwrite),
+          json: isJson,
+        });
+        console.log(result);
         break;
       }
 
