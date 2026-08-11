@@ -53,6 +53,9 @@ Commands:
   create-prdd [productName]
     Print guidelines for creating a bilingual PRDD (Obsidian Vault).
 
+  edit-prdd [productName]
+    Print guidelines for editing a bilingual PRDD (Obsidian Vault).
+
   extract-knowledge <file-or-folder> [options]
     Convert document files into structured AI-friendly knowledge .md files.
     --llm                         Use OpenAI-compatible LLM to enhance output
@@ -278,6 +281,40 @@ async function main() {
           console.log(`=== PRDD Creation Guide for "${prodName}" ===`);
           console.log('Run via AI Agent (OpenCode / Claude Code / Hermes / OpenClaw / Antigravity):');
           console.log('Use slash command /create-prdd to start 9-section bilingual interview.');
+        }
+        break;
+      }
+
+      case 'edit-prdd': {
+        const prodName = positional[0] || (flags.name as string) || 'Product';
+        const vaultPath = process.env.OBSIDIAN_VAULT_PATH || process.env.OBSIDIAN_VAULT || 'Dynamic (OBSIDIAN_VAULT_PATH env / user home / user prompt)';
+        const guide = {
+          command: 'edit-prdd',
+          productName: prodName,
+          vaultPath,
+          description: 'Bilingual Product Requirements & Design Document (PRDD) editor for Obsidian',
+          sections: [
+            '1. Overview & Problem Statement',
+            '2. Goals & Success Metrics',
+            '3. User Stories / Use Cases',
+            '4. Functional Requirements (MoSCoW)',
+            '5. System Architecture (Mermaid flowchart TD)',
+            '6. Database Schema / ERD (Mermaid erDiagram)',
+            '7. API Contract (Endpoints & Mermaid sequenceDiagram)',
+            '8. Non-Functional Requirements',
+            '9. Dependencies & Risks'
+          ],
+          outputs: [
+            `PRDD - ${prodName} (ID).md`,
+            `PRDD - ${prodName} (EN).md`
+          ]
+        };
+        if (isJson) {
+          console.log(JSON.stringify(guide, null, 2));
+        } else {
+          console.log(`=== PRDD Editing Guide for "${prodName}" ===`);
+          console.log('Run via AI Agent (OpenCode / Claude Code / Hermes / OpenClaw / Antigravity):');
+          console.log('Use slash command /edit-prdd to edit and synchronize 9-section bilingual files.');
         }
         break;
       }

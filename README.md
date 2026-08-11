@@ -9,6 +9,7 @@ AI Product Manager (PM) toolkit for Jira & Bitbucket: create Jira tickets, gener
 - **`/review-pr` / `fetch_pr_review` & `post_pr_review`** — Fetches PR diffs from Bitbucket, generates structured review prompts, posts inline + summary findings to Bitbucket, and cross-references linked Jira issues.
 - **`/create-ticket` / `create_ticket`** — Creates a Jira ticket assigned to the active sprint with auto-structured templates (Task, Bug, Story, Epic, Story Points, Assignee).
 - **`/create-prdd` / `create_prdd`** — Conducts a 9-section interview to generate a bilingual Product Requirements & Design Document (Bahasa Indonesia `PRDD - <Name> (ID).md` + English `PRDD - <Name> (EN).md`) in your Obsidian vault.
+- **`/edit-prdd` / `edit_prdd`** — Updates/edits an existing bilingual Product Requirements & Design Document (PRDD) in your Obsidian vault, keeping the Bahasa Indonesia and English versions in sync.
 - **`/edit-ticket` / `edit_ticket`** — Updates summary, description, or assignee on existing Jira tickets.
 - **`/release-workflow` / `release_workflow`** — Creates Jira release versions for Ready for Release tickets and generates markdown release notes.
 - **`/sprint-report` / `sprint_report`** — Generates complete sprint health reports with burndown metrics, assignee distribution, and HTML export.
@@ -53,6 +54,7 @@ Commands automatically registered:
 - `/review-pr <bitbucket-pr-url>`
 - `/create-ticket <summary>`
 - `/create-prdd <product-name>`
+- `/edit-prdd <product-name>`
 - `/edit-ticket <issueKey>`
 - `/sprint-report`
 - `/release-workflow`
@@ -182,6 +184,9 @@ npx openpm-tools create-ticket "Fix payment gateway timeout" --type bug --sprint
 
 # View PRDD creation guide
 npx openpm-tools create-prdd "MyApp"
+
+# View PRDD editing guide
+npx openpm-tools edit-prdd "MyApp"
 
 # Edit ticket
 npx openpm-tools edit-ticket KAIRA-123 --summary "Updated summary" --assignee "Ammar"
