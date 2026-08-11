@@ -24,6 +24,10 @@
     "create-prdd": {
       "description": "Creates a bilingual Product Requirements & Design Document (PRDD) in your Obsidian vault through a 9-section interview, then writes two files (Indonesian `PRDD - <Name> (ID).md` and English `PRDD - <Name> (EN).md`) under `01 Projects/PRDs/<Project>/` and updates the `Daftar PRDD.md` index.",
       "template": "Follow instructions in .opencode/command/create-prdd.md to conduct the 9-section interview and generate the bilingual PRDD. Arguments: $ARGUMENTS"
+    },
+    "extract-knowledge": {
+      "description": "Extract document files (.docx, .pdf, .pptx, .xlsx, .md, .csv) into AI-friendly knowledge markdown in Obsidian vault. Usage: /extract-knowledge <file-or-folder> [--llm] [--out <dir>] [--overwrite] [--vault <path>] [--json]",
+      "template": "Follow instructions in .opencode/command/extract-knowledge.md to extract knowledge files. Arguments: $ARGUMENTS"
     }
   }
 }

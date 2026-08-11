@@ -12,6 +12,7 @@ import { runFromEnv as runCreateTicket } from '../create-ticket/index.ts';
 import { runFromEnv as runEditTicket } from '../edit-ticket/index.ts';
 import { runFromEnv as runReleaseWorkflow } from '../release-workflow/index.ts';
 import { runFromEnv as runSprintReport } from '../sprint-report/index.ts';
+import { runFromEnv as runExtractKnowledge } from '../extract-knowledge/index.ts';
 import {
   fetchReviewData,
   postBitbucketComments,
@@ -123,6 +124,22 @@ const tools: Tool[] = [
       "properties": {
         "productName": { "type": "string", "description": "Product name" }
       }
+    }
+  },
+  {
+    name: 'extract_knowledge',
+    description: 'Extract document files (.docx, .pdf, .pptx, .xlsx, .md, .csv) into AI-friendly knowledge markdown in Obsidian vault',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        source: { type: 'string', description: 'Path to source file or folder to extract' },
+        llm: { type: 'boolean', description: 'Enhance extracted markdown using LLM' },
+        out: { type: 'string', description: 'Custom output directory path' },
+        overwrite: { type: 'boolean', description: 'Overwrite existing knowledge markdown files' },
+        vault: { type: 'string', description: 'Obsidian vault root directory path' },
+        json: { type: 'boolean', description: 'Return output as structured JSON' }
+      },
+      required: ['source']
     }
   }
 ];
@@ -282,6 +299,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               ),
             },
           ],
+        };
+      }
+
+      case 'extract_knowledge': {
+        const result = await runExtractKnowledge({
+          source: String(toolArgs.source),
+          llm: toolArgs.llm === true,
+          out: toolArgs.out ? String(toolArgs.out) : undefined,
+          overwrite: toolArgs.overwrite === true,
+          vault: toolArgs.vault ? String(toolArgs.vault) : undefined,
+          json: toolArgs.json === true,
+        });
+        return {
+          content: [{ type: 'text', text: result }],
         };
       }
 
