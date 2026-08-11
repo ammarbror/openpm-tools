@@ -89,6 +89,7 @@ Add to your `~/.claude.json` or project `.mcp.json`:
 This repo contains pre-packaged skills in `.claude/skills/`:
 - `.claude/skills/create-ticket`
 - `.claude/skills/create-prdd`
+- `.claude/skills/edit-prdd`
 - `.claude/skills/edit-ticket`
 - `.claude/skills/release-workflow`
 - `.claude/skills/sprint-report`
@@ -206,6 +207,38 @@ npx openpm-tools fetch-pr-review "https://bitbucket.org/myworkspace/myrepo/pull-
 # Post PR review findings
 npx openpm-tools post-pr-review "https://bitbucket.org/myworkspace/myrepo/pull-requests/42" findings.json
 ```
+
+---
+
+### `edit-prdd` Command & Skill
+
+Edit and synchronize existing bilingual Product Requirements & Design Document (PRDD) files in your Obsidian vault (`<VAULT>/01 Projects/PRDs/<Project>/`).
+
+**CLI Usage:**
+```bash
+npx openpm-tools edit-prdd [product-name] [--json]
+```
+
+**Parameters / Flags:**
+- `product-name`: Name of the product PRDD to locate and edit (e.g., `"MyApp"`).
+- `--json`: Output result as a structured JSON guide.
+
+**OpenCode & Claude Code Command:**
+- `/edit-prdd [product-name]`
+
+---
+
+### `create-prdd` Command & Skill
+
+Conduct a 9-section interview or parse attached documents to generate a bilingual PRDD (`PRDD - <Name> (ID).md` and `PRDD - <Name> (EN).md`) under `<VAULT>/01 Projects/PRDs/<Project>/` and update the `Daftar PRDD.md` index.
+
+**CLI Usage:**
+```bash
+npx openpm-tools create-prdd [product-name] [--json]
+```
+
+**OpenCode & Claude Code Command:**
+- `/create-prdd [product-name]`
 
 ---
 
