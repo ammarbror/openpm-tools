@@ -12,6 +12,7 @@ AI Product Manager (PM) toolkit for Jira & Bitbucket: create Jira tickets, gener
 - **`/edit-ticket` / `edit_ticket`** — Updates summary, description, or assignee on existing Jira tickets.
 - **`/release-workflow` / `release_workflow`** — Creates Jira release versions for Ready for Release tickets and generates markdown release notes.
 - **`/sprint-report` / `sprint_report`** — Generates complete sprint health reports with burndown metrics, assignee distribution, and HTML export.
+- **`/extract-knowledge` / `extract_knowledge`** — Converts document files (`.md`, `.pdf`, `.docx`, `.pptx`, `.xlsx`, `.odt`, `.csv`, etc.) into structured, AI-friendly knowledge Markdown files in an Obsidian vault (`<VAULT>/00 Knowledge/`), optionally enhanced by an LLM.
 
 ---
 
@@ -55,6 +56,7 @@ Commands automatically registered:
 - `/edit-ticket <issueKey>`
 - `/sprint-report`
 - `/release-workflow`
+- `/extract-knowledge <file-or-folder>`
 
 ### 2. Claude Code
 Supports both **MCP Server** and **Native Skills**.
@@ -89,6 +91,7 @@ This repo contains pre-packaged skills in `.claude/skills/`:
 - `.claude/skills/release-workflow`
 - `.claude/skills/sprint-report`
 - `.claude/skills/review-pr`
+- `.claude/skills/extract-knowledge`
 
 ### 3. Hermes-Agent
 Hermes-Agent can use `openpm-tools` via MCP or CLI tool calls.
@@ -186,6 +189,9 @@ npx openpm-tools edit-ticket KAIRA-123 --summary "Updated summary" --assignee "A
 # Run release workflow
 npx openpm-tools release-workflow --version-name "v1.5.0"
 
+# Extract knowledge from a file or folder into Obsidian vault
+npx openpm-tools extract-knowledge ./document.docx --llm --overwrite
+
 # Generate sprint report
 npx openpm-tools sprint-report --export-html
 
@@ -195,6 +201,31 @@ npx openpm-tools fetch-pr-review "https://bitbucket.org/myworkspace/myrepo/pull-
 # Post PR review findings
 npx openpm-tools post-pr-review "https://bitbucket.org/myworkspace/myrepo/pull-requests/42" findings.json
 ```
+
+---
+
+### `extract-knowledge` Command & MCP Tool
+
+Extract structured Markdown knowledge files from office documents, PDFs, CSVs, and Markdown files into `<VAULT>/00 Knowledge/`.
+
+**CLI Usage:**
+```bash
+npx openpm-tools extract-knowledge <file-or-folder> [options]
+```
+
+**Parameters / Flags:**
+- `<file-or-folder>`: Path to target file or directory containing files.
+- `--llm`: Optional flag to enable LLM enhancement via OpenAI-compatible endpoint.
+- `--vault <path>`: Explicit path to Obsidian vault.
+- `--out <dir>`: Explicit output directory override.
+- `--overwrite`: Overwrite existing knowledge file if present.
+- `--json`: Output result as structured JSON array.
+
+**MCP Tool:**
+- `extract_knowledge`: Accepts `source` (required string path), `llm` (optional boolean), `vault` (optional string), `out` (optional string), `overwrite` (optional boolean).
+
+**OpenCode Command:**
+- `/extract-knowledge <file-or-folder>`
 
 ---
 
