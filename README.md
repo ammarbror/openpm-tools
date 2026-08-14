@@ -6,7 +6,8 @@ AI Product Manager (PM) toolkit for Jira & Bitbucket: create Jira tickets, gener
 
 ## Features
 
-- **`/review-pr` / `fetch_pr_review` & `post_pr_review`** — Fetches PR diffs from Bitbucket, generates structured review prompts, posts inline + summary findings to Bitbucket, and cross-references linked Jira issues.
+- **`/review-pr` / `fetch_pr_review` & `post_pr_review`** — Fetches PR diffs from Bitbucket, generates structured review prompts, performs PR hygiene alerts (missing description / linked Jira tickets), posts inline + summary findings to Bitbucket, and cross-references linked Jira issues with actionable next steps.
+- **`/daily-standup` / `daily_standup`** — Generates real-time Daily Standup Reports in Markdown format from Jira activities (Yesterday's Progress, Today's Focus, Risks & Blockers).
 - **`/create-ticket` / `create_ticket`** — Creates a Jira ticket assigned to the active sprint with auto-structured templates (Task, Bug, Story, Epic, Story Points, Assignee).
 - **`/create-prdd` / `create_prdd`** — Conducts a 9-section interview to generate a bilingual Product Requirements & Design Document (Bahasa Indonesia `PRDD - <Name> (ID).md` + English `PRDD - <Name> (EN).md`) in your Obsidian vault.
 - **`/edit-prdd` / `edit_prdd`** — Updates/edits an existing bilingual Product Requirements & Design Document (PRDD) in your Obsidian vault, keeping the Bahasa Indonesia and English versions in sync.
@@ -52,6 +53,7 @@ cp .env.example .env
 Pre-configured via `opencode.json` and `.opencode/command/`. Just clone into your workspace directory.
 Commands automatically registered:
 - `/review-pr <bitbucket-pr-url>`
+- `/daily-standup [assigneeName]`
 - `/create-ticket <summary>`
 - `/create-prdd <product-name>`
 - `/edit-prdd <product-name>`
@@ -189,6 +191,9 @@ npx openpm-tools create-prdd "MyApp"
 # View PRDD editing guide
 npx openpm-tools edit-prdd "MyApp"
 
+# Generate daily standup report
+npx openpm-tools daily-standup "Dian Aditya"
+
 # Edit ticket
 npx openpm-tools edit-ticket KAIRA-123 --summary "Updated summary" --assignee "Ammar"
 
@@ -207,6 +212,24 @@ npx openpm-tools fetch-pr-review "https://bitbucket.org/myworkspace/myrepo/pull-
 # Post PR review findings
 npx openpm-tools post-pr-review "https://bitbucket.org/myworkspace/myrepo/pull-requests/42" findings.json
 ```
+
+---
+
+### `daily-standup` Command & Skill
+
+Generate a real-time Daily Standup Report in Markdown format from recent Jira activities. Grouped into **Yesterday's Progress**, **Today's Focus**, and **Risks & Blockers**.
+
+**CLI Usage:**
+```bash
+npx openpm-tools daily-standup [assigneeName] [--json]
+```
+
+**Parameters / Flags:**
+- `assigneeName`: Optional string filter for a specific team member.
+- `--json`: Output result as a structured JSON object.
+
+**OpenCode & Claude Code Command:**
+- `/daily-standup [assigneeName]`
 
 ---
 
