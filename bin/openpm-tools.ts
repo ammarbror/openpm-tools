@@ -5,6 +5,7 @@ import { runFromEnv as runEditTicket } from '../src/edit-ticket/index.ts';
 import { runFromEnv as runReleaseWorkflow } from '../src/release-workflow/index.ts';
 import { runFromEnv as runSprintReport } from '../src/sprint-report/index.ts';
 import { runFromEnv as runExtractKnowledge } from '../src/extract-knowledge/index.ts';
+import { generateStandupReport, formatStandupMarkdown } from '../src/daily-standup/index.ts';
 import {
   fetchReviewData,
   postBitbucketComments,
@@ -49,6 +50,9 @@ Commands:
 
   post-pr-review <prUrl> <findingsJsonFileOrString>
     Post LLM findings to Bitbucket PR and linked Jira issues.
+
+  daily-standup [assigneeName]
+    Generate a markdown daily standup report from Jira activities.
 
   create-prdd [productName]
     Print guidelines for creating a bilingual PRDD (Obsidian Vault).
@@ -240,13 +244,25 @@ async function main() {
         const jiraConfig = loadJiraConfig();
         const reviewData = await fetchReviewData(prUrl);
 
-        await postBitbucketComments(reviewData.prInfo, bbConfig, findings);
+        await postBitbucketComments(reviewData.prInfo, bbConfig, findings, (reviewData.metadata as any).qualityWarnings || []);
         const jiraResults = await postJiraComments(prUrl, reviewData.metadata.title, reviewData.jiraKeys, jiraConfig, findings);
 
         if (isJson) {
           console.log(JSON.stringify({ success: true, jiraResults }, null, 2));
         } else {
           console.log('✅ Review comments posted successfully to Bitbucket & Jira.');
+        }
+        break;
+      }
+
+      case 'daily-standup':
+      case 'standup-report': {
+        const assignee = positional[0] || (flags.assignee as string);
+        const report = await generateStandupReport(assignee);
+        if (isJson) {
+          console.log(JSON.stringify(report, null, 2));
+        } else {
+          console.log(formatStandupMarkdown(report));
         }
         break;
       }

@@ -99,9 +99,19 @@ export async function fetchReviewData(
   ]);
 
   const jiraKeys = extractJiraKeys(metadata);
+  
+  // PR Hygiene & Description Quality Check
+  const qualityWarnings: string[] = [];
+  if (!metadata.description || metadata.description.trim().length < 15) {
+    qualityWarnings.push('PR Description is missing or too short. Provide a clear summary of changes.');
+  }
+  if (jiraKeys.length === 0) {
+    qualityWarnings.push('No linked Jira issue key found in PR title or branch name.');
+  }
+
   const reviewPrompt = buildReviewPrompt(diff, metadata.title, metadata.description);
 
-  return { prInfo, prUrl, metadata, diff, jiraKeys, bbConfig, jiraConfig, reviewPrompt };
+  return { prInfo, prUrl, metadata: { ...metadata, qualityWarnings }, diff, jiraKeys, bbConfig, jiraConfig, reviewPrompt };
 }
 
 // ---------------------------------------------------------------------------
@@ -121,37 +131,64 @@ export async function postBitbucketComments(
   prInfo: PRInfo,
   bbConfig: BitbucketConfig,
   findings: ReviewFinding[],
+  qualityWarnings: string[] = [],
 ): Promise<void> {
-  if (findings.length === 0) {
-    await postGeneralComment(
-      prInfo,
-      bbConfig,
-      '**NO ISSUES FOUND** – The pull request looks good with no CRITICAL, HIGH, or BUG findings.',
-    );
-    return;
-  }
-
-  // Build grouped general comment
-  const groups: Record<string, ReviewFinding[]> = { CRITICAL: [], HIGH: [], BUG: [] };
-  for (const f of findings) {
-    if (groups[f.severity]) {
-      groups[f.severity].push(f);
-    }
-  }
-
   const lines: string[] = [];
-  for (const severity of ['CRITICAL', 'HIGH', 'BUG'] as const) {
-    const group = groups[severity];
-    if (!group || group.length === 0) continue;
 
-    lines.push(`### ${severity}`);
-    lines.push('');
-    for (const f of group) {
-      const location = f.line != null ? `\`${f.file}:${f.line}\`` : `\`${f.file}\``;
-      lines.push(`- ${location} — ${f.message}`);
+  // PR Quality Warnings Header
+  if (qualityWarnings.length > 0) {
+    lines.push('## ⚠️ PR Quality Alerts');
+    for (const warn of qualityWarnings) {
+      lines.push(`- **Warning:** ${warn}`);
     }
     lines.push('');
   }
+
+  if (findings.length === 0) {
+    lines.push('**NO ISSUES FOUND** – The pull request looks good with no CRITICAL, HIGH, or BUG findings.');
+  } else {
+    // Build grouped general comment
+    const groups: Record<string, ReviewFinding[]> = { CRITICAL: [], HIGH: [], BUG: [] };
+    for (const f of findings) {
+      if (groups[f.severity]) {
+        groups[f.severity].push(f);
+      }
+    }
+
+    for (const severity of ['CRITICAL', 'HIGH', 'BUG'] as const) {
+      const group = groups[severity];
+      if (!group || group.length === 0) continue;
+
+      lines.push(`### ${severity}`);
+      lines.push('');
+      for (const f of group) {
+        const location = f.line != null ? `\`${f.file}:${f.line}\`` : `\`${f.file}\``;
+        lines.push(`- ${location} — ${f.message}`);
+      }
+      lines.push('');
+    }
+  }
+
+  // Next Steps Guidance
+  lines.push('## 🎯 Next Steps');
+  if (findings.length > 0) {
+    const hasCritical = findings.some(f => f.severity === 'CRITICAL');
+    const hasHigh = findings.some(f => f.severity === 'HIGH');
+    
+    if (hasCritical) {
+      lines.push('1. 🚨 **Action Required:** Fix the Critical security vulnerabilities before merging.');
+    }
+    if (hasHigh) {
+      lines.push(`${hasCritical ? '2' : '1'}. 🛠 **Action Required:** Fix the High severity logic bugs.`);
+    }
+    lines.push(`${(hasCritical || hasHigh) ? '3' : '1'}. 🧪 Retest the changes in staging environment.`);
+  } else {
+    lines.push('1. 🟢 LGTM (Looks Good To Me). Ready for approval/merge once CI passes.');
+  }
+  if (qualityWarnings.length > 0) {
+    lines.push('- 📝 Please update the PR description to link the correct Jira ticket and clarify changes.');
+  }
+  lines.push('');
 
   const generalComment = lines.join('\n');
   await postGeneralComment(prInfo, bbConfig, generalComment);
