@@ -5,18 +5,22 @@ description: Perform automated LLM code review on Bitbucket PR and post findings
 
 # Review PR Skill
 
-Execute this two-step process:
+Automated Bitbucket PR code review with Jira cross-referencing, PR hygiene checks, and actionable next steps.
 
-1. Fetch PR data and diff:
-```bash
-npx openpm-tools fetch-pr-review "$ARGUMENTS" --json
-```
+## Workflow
 
-2. Analyze the returned diff and metadata for CRITICAL, HIGH, and BUG severity issues.
-   - Ignore style, formatting, performance, or refactoring suggestions.
-   - Focus exclusively on security vulnerabilities, logic bugs, and broken edge cases.
+1. **Fetch PR metadata & diff:**
+   ```bash
+   npx openpm-tools fetch-pr-review "<bitbucket-pr-url>" --json
+   ```
 
-3. Write findings to a temporary JSON file or post directly:
-```bash
-npx openpm-tools post-pr-review "$ARGUMENTS" '[{"severity":"HIGH","file":"src/app.ts","line":12,"title":"Security Flaw","description":"Unsanitized input","suggestion":"Sanitize input"}]'
-```
+2. **Analyze diff & metadata:**
+   - **Severity Levels:** `CRITICAL` (security/data loss), `HIGH` (logic bugs/race conditions), `BUG` (unhandled null/crash).
+   - **Rules:** Ignore style, refactoring, formatting, or subjective nitpicks. Only flag definitive bugs.
+   - **Hygiene Alerts:** Check `metadata.qualityWarnings` (missing PR description, unlinked Jira tickets).
+
+3. **Post Findings & Cross-References:**
+   ```bash
+   npx openpm-tools post-pr-review "<bitbucket-pr-url>" '[{"severity":"HIGH","file":"src/app.ts","line":12,"message":"Unsanitized input reaching SQL query."}]'
+   ```
+

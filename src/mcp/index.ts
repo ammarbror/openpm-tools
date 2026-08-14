@@ -13,6 +13,7 @@ import { runFromEnv as runEditTicket } from '../edit-ticket/index.ts';
 import { runFromEnv as runReleaseWorkflow } from '../release-workflow/index.ts';
 import { runFromEnv as runSprintReport } from '../sprint-report/index.ts';
 import { runFromEnv as runExtractKnowledge } from '../extract-knowledge/index.ts';
+import { generateStandupReport, formatStandupMarkdown } from '../daily-standup/index.ts';
 import {
   fetchReviewData,
   postBitbucketComments,
@@ -75,6 +76,16 @@ const tools: Tool[] = [
       properties: {
         sprintName: { type: 'string', description: 'Target sprint name' },
         exportHtml: { type: 'boolean', description: 'Export standalone HTML file with burndown chart' },
+      },
+    },
+  },
+  {
+    name: 'daily_standup',
+    description: 'Generate a real-time markdown daily standup report from Jira activities (Yesterday Progress, Today Focus, Risks & Blockers)',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        assigneeName: { type: 'string', description: 'Optional team member name to filter standup report' },
       },
     },
   },
@@ -251,7 +262,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const jiraConfig = loadJiraConfig();
         const reviewData = await fetchReviewData(prUrl);
 
-        await postBitbucketComments(reviewData.prInfo, bbConfig, findings);
+        await postBitbucketComments(reviewData.prInfo, bbConfig, findings, (reviewData.metadata as any).qualityWarnings || []);
         const jiraResults = await postJiraComments(
           prUrl,
           reviewData.metadata.title,
@@ -267,6 +278,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               text: JSON.stringify({ success: true, jiraResults }, null, 2),
             },
           ],
+        };
+      }
+
+      case 'daily_standup': {
+        const assignee = toolArgs.assigneeName ? String(toolArgs.assigneeName) : undefined;
+        const report = await generateStandupReport(assignee);
+        const markdown = formatStandupMarkdown(report);
+        return {
+          content: [{ type: 'text', text: markdown }],
         };
       }
 
