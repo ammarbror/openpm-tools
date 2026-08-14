@@ -141,6 +141,9 @@ export async function addIssueCommentADF(
  *   `- [x] task`        → bulletList with [x] prefix
  *   `- item`            → bulletList item
  *   `1. item`           → orderedList item
+ *   `|| a || b ||`      → tableRow with tableHeader cells
+ *   `| a | b |`         → tableRow with tableCell cells
+ *   `{code[:lang]}`     → codeBlock (lines until closing {code})
  *   plain text          → paragraph
  *   blank lines         → skipped (separators only, no empty paragraphs)
  */
@@ -245,6 +248,50 @@ export function textToADF(text: string): Record<string, unknown> {
           type: 'listItem',
           content: [paragraph(item)],
         })),
+      });
+      continue;
+    }
+
+    // Jira wiki tables: header rows use || separators, data rows use single |
+    if (trimmed.startsWith('||') || trimmed.startsWith('| ')) {
+      const rows: { isHeader: boolean; cells: string[] }[] = [];
+      while (i < lines.length) {
+        const t = lines[i].trim();
+        const isHeaderRow = t.startsWith('||');
+        if (!isHeaderRow && !t.startsWith('|')) break;
+        const inner = t.replace(/\|\|/g, '|').replace(/^\|/, '').replace(/\|$/, '');
+        const cells = inner.split('|').map((c) => c.trim());
+        rows.push({ isHeader: isHeaderRow, cells });
+        i++;
+      }
+      content.push({
+        type: 'table',
+        attrs: { isNumberColumnEnabled: false },
+        content: rows.map((row) => ({
+          type: 'tableRow',
+          content: row.cells.map((cell) => ({
+            type: row.isHeader ? 'tableHeader' : 'tableCell',
+            content: [paragraph(cell)],
+          })),
+        })),
+      });
+      continue;
+    }
+
+    const codeOpen = trimmed.match(/^\{code(?::([a-zA-Z0-9_-]+))?\}$/);
+    if (codeOpen) {
+      const lang = codeOpen[1];
+      const codeLines: string[] = [];
+      i++;
+      while (i < lines.length && lines[i].trim() !== '{code}') {
+        codeLines.push(lines[i]);
+        i++;
+      }
+      i++;
+      content.push({
+        type: 'codeBlock',
+        ...(lang ? { attrs: { language: lang } } : {}),
+        content: [{ type: 'text', text: codeLines.join('\n') }],
       });
       continue;
     }
