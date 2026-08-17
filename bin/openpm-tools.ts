@@ -295,7 +295,7 @@ async function main() {
           console.log(JSON.stringify(guide, null, 2));
         } else {
           console.log(`=== PRDD Creation Guide for "${prodName}" ===`);
-          console.log('Run via AI Agent (OpenCode / Claude Code / Hermes / OpenClaw / Antigravity):');
+          console.log('Run via AI Agent (Codex / OpenCode / Claude Code / Hermes / OpenClaw / Antigravity):');
           console.log('Use slash command /create-prdd to start 9-section bilingual interview.');
         }
         break;
@@ -329,7 +329,7 @@ async function main() {
           console.log(JSON.stringify(guide, null, 2));
         } else {
           console.log(`=== PRDD Editing Guide for "${prodName}" ===`);
-          console.log('Run via AI Agent (OpenCode / Claude Code / Hermes / OpenClaw / Antigravity):');
+          console.log('Run via AI Agent (Codex / OpenCode / Claude Code / Hermes / OpenClaw / Antigravity):');
           console.log('Use slash command /edit-prdd to edit and synchronize 9-section bilingual files.');
         }
         break;

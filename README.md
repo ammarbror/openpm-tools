@@ -1,6 +1,6 @@
 # openpm-tools
 
-AI Product Manager (PM) toolkit for Jira & Bitbucket: create Jira tickets, generate bilingual PRDDs in Obsidian, generate sprint reports, manage release notes, update tickets, and run automated PR reviews — natively integrated with **OpenCode**, **Claude Code**, **Hermes-Agent**, **OpenClaw**, and **Antigravity** (via MCP Server & CLI).
+AI Product Manager (PM) toolkit for Jira & Bitbucket: create Jira tickets, generate bilingual PRDDs in Obsidian, generate sprint reports, manage release notes, update tickets, and run automated PR reviews — natively integrated with **Codex**, **OpenCode**, **Claude Code**, **Hermes-Agent**, **OpenClaw**, and **Antigravity** (via MCP Server & CLI).
 
 ---
 
@@ -49,7 +49,25 @@ cp .env.example .env
 
 ## Multi-Agent Integration Guide
 
-### 1. OpenCode
+### 1. Codex
+
+Codex can use this repository in two ways:
+
+- **Project guidance and skills:** keep the repository open as a Codex workspace. `AGENTS.md` documents the shared conventions, and `.codex/skills/` contains reusable workflow instructions when installed in the checkout.
+- **CLI and MCP:** run commands directly from the repository, or connect the stdio MCP server:
+
+```bash
+# Direct CLI
+npx openpm-tools create-ticket "Fix payment gateway timeout" --type bug
+
+# Local development commands
+npm run cli -- sprint-report --export-html
+npm run mcp
+```
+
+For a Codex skill that is not present in an older checkout, use the equivalent CLI command documented below. The CLI and MCP server share the same `.env` configuration.
+
+### 2. OpenCode
 Pre-configured via `opencode.json` and `.opencode/command/`. Just clone into your workspace directory.
 Commands automatically registered:
 - `/review-pr <bitbucket-pr-url>`
@@ -62,7 +80,7 @@ Commands automatically registered:
 - `/release-workflow`
 - `/extract-knowledge <file-or-folder>`
 
-### 2. Claude Code
+### 3. Claude Code
 Supports both **MCP Server** and **Native Skills**.
 
 #### Option A: MCP Server (Recommended)
@@ -98,7 +116,7 @@ This repo contains pre-packaged skills in `.claude/skills/`:
 - `.claude/skills/review-pr`
 - `.claude/skills/extract-knowledge`
 
-### 3. Hermes-Agent
+### 4. Hermes-Agent
 Hermes-Agent can use `openpm-tools` via MCP or CLI tool calls.
 
 **Via MCP (`~/.hermes/mcp.json` or agent config):**
@@ -116,7 +134,7 @@ Hermes-Agent can use `openpm-tools` via MCP or CLI tool calls.
 **Via CLI:**
 Instruct Hermes to run `npx openpm-tools <command> [options]`.
 
-### 4. OpenClaw
+### 5. OpenClaw
 Add `openpm-tools` to your OpenClaw tool definition using stdio MCP:
 
 ```json
@@ -132,7 +150,7 @@ Add `openpm-tools` to your OpenClaw tool definition using stdio MCP:
 }
 ```
 
-### 5. Antigravity
+### 6. Antigravity
 Add to your Antigravity MCP configuration:
 
 ```json
@@ -162,7 +180,7 @@ For production setups, a **Combined (Hybrid)** architecture is recommended:
            ▼                                                         ▼
 ┌──────────────────────────────┐                         ┌──────────────────────────────┐
 │       Interactive Dev        │                         │    Background Automation     │
-│   (OpenCode / Claude Code)   │                         │  (Hermes-Agent / OpenClaw)   │
+│ (Codex / OpenCode / Claude)  │                         │  (Hermes-Agent / OpenClaw)   │
 ├──────────────────────────────┤                         ├──────────────────────────────┤
 │ - Direct CLI & slash cmds    │                         │ - Telegram / Slack / Webhook │
 │ - Interactive 9-step PRDD    │                         │ - Automated sprint triggers  │
@@ -170,7 +188,7 @@ For production setups, a **Combined (Hybrid)** architecture is recommended:
 └──────────────────────────────┘                         └──────────────────────────────┘
 ```
 
-- **OpenCode / Claude Code (Interactive)**: Use for interactive development, running slash commands (`/create-prdd`, `/review-pr`), and pair-programming in local terminal/IDE.
+- **Codex / OpenCode / Claude Code (Interactive)**: Use for interactive development, running workflow skills or slash commands (`/create-prdd`, `/review-pr`), and pair-programming in a local terminal/IDE.
 - **Hermes-Agent / OpenClaw (Autonomous / Background)**: Connect via `openpm-tools` MCP server or CLI to handle background triggers (e.g. automatically creating Jira tickets from Slack messages, sending automated sprint reports to Telegram, or auditing PRs on webhooks).
 
 Both agent tiers share the same `.env` credentials and `openpm-tools` core engine.
@@ -228,7 +246,7 @@ npx openpm-tools daily-standup [assigneeName] [--json]
 - `assigneeName`: Optional string filter for a specific team member.
 - `--json`: Output result as a structured JSON object.
 
-**OpenCode & Claude Code Command:**
+**Codex / OpenCode / Claude Code:**
 - `/daily-standup [assigneeName]`
 
 ---
@@ -246,7 +264,7 @@ npx openpm-tools edit-prdd [product-name] [--json]
 - `product-name`: Name of the product PRDD to locate and edit (e.g., `"MyApp"`).
 - `--json`: Output result as a structured JSON guide.
 
-**OpenCode & Claude Code Command:**
+**Codex / OpenCode / Claude Code:**
 - `/edit-prdd [product-name]`
 
 ---
@@ -260,7 +278,7 @@ Conduct a 9-section interview or parse attached documents to generate a bilingua
 npx openpm-tools create-prdd [product-name] [--json]
 ```
 
-**OpenCode & Claude Code Command:**
+**Codex / OpenCode / Claude Code:**
 - `/create-prdd [product-name]`
 
 ---
@@ -298,13 +316,15 @@ openpm-tools/
 │   └── openpm-tools.ts      # Unified CLI runner (Node/npm bin)
 ├── src/
 │   ├── mcp/
-│   │   └── index.ts         # Stdio MCP Server (Claude Code, Antigravity, OpenClaw, Hermes)
+│   │   └── index.ts         # Stdio MCP Server (Codex, Claude Code, Antigravity, OpenClaw, Hermes)
 │   ├── create-ticket/
 │   ├── edit-ticket/
 │   ├── release-workflow/
 │   ├── sprint-report/
 │   └── review-pr/
 ├── .claude/skills/          # Claude Code skill manifests
+├── .codex/skills/            # Codex project skill manifests
+├── AGENTS.md                 # Codex/repository working guidance
 ├── .opencode/command/       # OpenCode command definitions (create-prdd.md)
 └── opencode.json            # OpenCode command registrations
 ```
