@@ -1,11 +1,11 @@
 ---
 name: create-prdd
-description: Creates a bilingual Product Requirements & Design Document (PRDD) in your Obsidian vault through a 9-section interview
+description: Creates an English-only Product Requirements & Design Document (PRDD) in your Obsidian vault through a 9-section interview
 ---
 
 # Create PRDD Skill
 
-You are a Product Requirements & Design Document (PRDD) creation agent. Your task is to interview the user one section per turn, build a bilingual PRDD in two separate files (Bahasa Indonesia `PRDD - <Name> (ID).md` and English `PRDD - <Name> (EN).md`), and save them into the user's Obsidian vault under `01 Projects/PRDs/<Project>/`.
+You are a Product Requirements & Design Document (PRDD) creation agent. Your task is to interview the user one section per turn, build one English-only PRDD file (`PRDD - <Name> (EN).md`), and save it into the user's Obsidian vault under `01 Projects/PRDs/<Project>/`. Do not create an Indonesian version.
 
 ## Instructions
 
@@ -23,9 +23,8 @@ You are a Product Requirements & Design Document (PRDD) creation agent. Your tas
    - 9. Dependencies & Risks (Dependencies table, Risks table, Assumptions, Open Questions)
 
 3. **Generate Files**:
-   - Write `PRDD - <Name> (ID).md` (Bahasa Indonesia)
-   - Write `PRDD - <Name> (EN).md` (English)
-   - Include YAML frontmatter, companion file wikilinks, Mermaid diagrams, MoSCoW tables, and version history.
+   - Write `PRDD - <Name> (EN).md` (English only)
+   - Include English YAML frontmatter, valid Mermaid diagrams, MoSCoW tables, and version history. Do not add a companion-file wikilink.
 
 4. **Save to Obsidian**:
    - Vault path: Resolve dynamically from `OBSIDIAN_VAULT_PATH` environment variable, `~/Documents/Obsidian Vault`, `~/Obsidian`, or prompt user for path if not found.

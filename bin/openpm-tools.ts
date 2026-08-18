@@ -55,7 +55,7 @@ Commands:
     Generate a markdown daily standup report from Jira activities.
 
   create-prdd [productName]
-    Print guidelines for creating a bilingual PRDD (Obsidian Vault).
+    Print guidelines for creating an English-only PRDD (Obsidian Vault).
 
   brainstorm [topic] [options]
     Print the interactive brainstorming workflow guide (agent-generated Markdown).
@@ -64,7 +64,7 @@ Commands:
     --out <directory>             Suggested Markdown output directory
 
   edit-prdd [productName]
-    Print guidelines for editing a bilingual PRDD (Obsidian Vault).
+    Print guidelines for editing an English-only PRDD (Obsidian Vault).
 
   extract-knowledge <file-or-folder> [options]
     Convert document files into structured AI-friendly knowledge .md files.
@@ -280,7 +280,7 @@ async function main() {
           command: 'create-prdd',
           productName: prodName,
           vaultPath,
-          description: 'Bilingual Product Requirements & Design Document (PRDD) generator for Obsidian',
+          description: 'English-only Product Requirements & Design Document (PRDD) generator for Obsidian',
           sections: [
             '1. Overview & Problem Statement',
             '2. Goals & Success Metrics',
@@ -292,17 +292,14 @@ async function main() {
             '8. Non-Functional Requirements',
             '9. Dependencies & Risks'
           ],
-          outputs: [
-            `PRDD - ${prodName} (ID).md`,
-            `PRDD - ${prodName} (EN).md`
-          ]
+          outputs: [`PRDD - ${prodName} (EN).md`]
         };
         if (isJson) {
           console.log(JSON.stringify(guide, null, 2));
         } else {
           console.log(`=== PRDD Creation Guide for "${prodName}" ===`);
           console.log('Run via AI Agent (Codex / OpenCode / Claude Code / Hermes / OpenClaw / Antigravity):');
-          console.log('Use slash command /create-prdd to start 9-section bilingual interview.');
+          console.log('Use slash command /create-prdd to start a 9-section English-only interview.');
         }
         break;
       }
@@ -373,7 +370,7 @@ async function main() {
           command: 'edit-prdd',
           productName: prodName,
           vaultPath,
-          description: 'Bilingual Product Requirements & Design Document (PRDD) editor for Obsidian',
+          description: 'English-only Product Requirements & Design Document (PRDD) editor for Obsidian',
           sections: [
             '1. Overview & Problem Statement',
             '2. Goals & Success Metrics',
@@ -385,17 +382,14 @@ async function main() {
             '8. Non-Functional Requirements',
             '9. Dependencies & Risks'
           ],
-          outputs: [
-            `PRDD - ${prodName} (ID).md`,
-            `PRDD - ${prodName} (EN).md`
-          ]
+          outputs: [`PRDD - ${prodName} (EN).md`]
         };
         if (isJson) {
           console.log(JSON.stringify(guide, null, 2));
         } else {
           console.log(`=== PRDD Editing Guide for "${prodName}" ===`);
           console.log('Run via AI Agent (Codex / OpenCode / Claude Code / Hermes / OpenClaw / Antigravity):');
-          console.log('Use slash command /edit-prdd to edit and synchronize 9-section bilingual files.');
+          console.log('Use slash command /edit-prdd to edit the 9-section English-only file.');
         }
         break;
       }

@@ -129,7 +129,7 @@ const tools: Tool[] = [
   },
   {
     "name": "create_prdd",
-    "description": "Get guidelines and section definitions to generate a 9-section bilingual PRDD (Indonesian + English) for Obsidian",
+    "description": "Get guidelines and section definitions to generate a 9-section English-only PRDD for Obsidian",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -301,7 +301,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 {
                   productName: prodName,
                   vaultPath,
-                  instructions: 'Conduct a 9-section interview with the user (Overview, Goals/Metrics, User Stories, Functional Requirements MoSCoW, System Architecture, Database Schema ERD, API Contract, Non-Functional Requirements, Dependencies & Risks). Resolve vault path dynamically (OBSIDIAN_VAULT_PATH env -> home dir -> user prompt). Write PRDD - <Name> (ID).md and PRDD - <Name> (EN).md under <VAULT>/01 Projects/PRDs/<sanitized-name>/ and append index in Daftar PRDD.md.',
+                  instructions: 'Conduct a 9-section interview with the user (Overview, Goals/Metrics, User Stories, Functional Requirements MoSCoW, System Architecture, Database Schema ERD, API Contract, Non-Functional Requirements, Dependencies & Risks). Resolve vault path dynamically (OBSIDIAN_VAULT_PATH env -> home dir -> user prompt). Write one English-only file, PRDD - <Name> (EN).md, under <VAULT>/01 Projects/PRDs/<sanitized-name>/ and append its link to Daftar PRDD.md. Do not create or modify an Indonesian file.',
                   sections: [
                     '1. Overview & Problem Statement',
                     '2. Goals & Success Metrics (with Non-Goals)',

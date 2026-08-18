@@ -1,6 +1,6 @@
 # openpm-tools
 
-AI Product Manager (PM) toolkit for Jira & Bitbucket: create Jira tickets, generate bilingual PRDDs in Obsidian, generate sprint reports, manage release notes, update tickets, and run automated PR reviews — natively integrated with **Codex**, **OpenCode**, **Claude Code**, **Hermes-Agent**, **OpenClaw**, and **Antigravity** (via MCP Server & CLI).
+AI Product Manager (PM) toolkit for Jira & Bitbucket: create Jira tickets, generate English PRDDs in Obsidian, generate sprint reports, manage release notes, update tickets, and run automated PR reviews — natively integrated with **Codex**, **OpenCode**, **Claude Code**, **Hermes-Agent**, **OpenClaw**, and **Antigravity** (via MCP Server & CLI).
 
 ---
 
@@ -9,9 +9,9 @@ AI Product Manager (PM) toolkit for Jira & Bitbucket: create Jira tickets, gener
 - **`/review-pr` / `fetch_pr_review` & `post_pr_review`** — Fetches PR diffs from Bitbucket, generates structured review prompts, performs PR hygiene alerts (missing description / linked Jira tickets), posts inline + summary findings to Bitbucket, and cross-references linked Jira issues with actionable next steps.
 - **`/daily-standup` / `daily_standup`** — Generates real-time Daily Standup Reports in Markdown format from Jira activities (Yesterday's Progress, Today's Focus, Risks & Blockers).
 - **`/create-ticket` / `create_ticket`** — Creates a Jira ticket assigned to the active sprint with auto-structured templates (Task, Bug, Story, Epic, Story Points, Assignee).
-- **`/create-prdd` / `create_prdd`** — Conducts a 9-section interview to generate a bilingual Product Requirements & Design Document (Bahasa Indonesia `PRDD - <Name> (ID).md` + English `PRDD - <Name> (EN).md`) in your Obsidian vault.
+- **`/create-prdd` / `create_prdd`** — Conducts a 9-section interview to generate an English Product Requirements & Design Document (`PRDD - <Name> (EN).md`) in your Obsidian vault.
 - **`/brainstorm`** — Runs a topic-agnostic, one-question-per-turn brainstorming interview and exports one structured Markdown document with explicit success criteria and optional Mermaid diagrams.
-- **`/edit-prdd` / `edit_prdd`** — Updates/edits an existing bilingual Product Requirements & Design Document (PRDD) in your Obsidian vault, keeping the Bahasa Indonesia and English versions in sync.
+- **`/edit-prdd` / `edit_prdd`** — Updates/edits the English Product Requirements & Design Document (PRDD) in your Obsidian vault.
 - **`/edit-ticket` / `edit_ticket`** — Updates summary, description, or assignee on existing Jira tickets.
 - **`/release-workflow` / `release_workflow`** — Creates Jira release versions for Ready for Release tickets and generates markdown release notes.
 - **`/sprint-report` / `sprint_report`** — Generates complete sprint health reports with burndown metrics, assignee distribution, and HTML export.
@@ -259,7 +259,7 @@ npx openpm-tools daily-standup [assigneeName] [--json]
 
 ### `edit-prdd` Command & Skill
 
-Edit and synchronize existing bilingual Product Requirements & Design Document (PRDD) files in your Obsidian vault (`<VAULT>/01 Projects/PRDs/<Project>/`).
+Edit an existing English Product Requirements & Design Document (PRDD) in your Obsidian vault (`<VAULT>/01 Projects/PRDs/<Project>/`).
 
 **CLI Usage:**
 ```bash
@@ -277,7 +277,7 @@ npx openpm-tools edit-prdd [product-name] [--json]
 
 ### `create-prdd` Command & Skill
 
-Conduct a 9-section interview or parse attached documents to generate a bilingual PRDD (`PRDD - <Name> (ID).md` and `PRDD - <Name> (EN).md`) under `<VAULT>/01 Projects/PRDs/<Project>/` and update the `Daftar PRDD.md` index.
+Conduct a 9-section interview or parse attached documents to generate one English PRDD (`PRDD - <Name> (EN).md`) under `<VAULT>/01 Projects/PRDs/<Project>/` and update the `Daftar PRDD.md` index.
 
 **CLI Usage:**
 ```bash
