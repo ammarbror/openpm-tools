@@ -10,6 +10,7 @@ AI Product Manager (PM) toolkit for Jira & Bitbucket: create Jira tickets, gener
 - **`/daily-standup` / `daily_standup`** — Generates real-time Daily Standup Reports in Markdown format from Jira activities (Yesterday's Progress, Today's Focus, Risks & Blockers).
 - **`/create-ticket` / `create_ticket`** — Creates a Jira ticket assigned to the active sprint with auto-structured templates (Task, Bug, Story, Epic, Story Points, Assignee).
 - **`/create-prdd` / `create_prdd`** — Conducts a 9-section interview to generate a bilingual Product Requirements & Design Document (Bahasa Indonesia `PRDD - <Name> (ID).md` + English `PRDD - <Name> (EN).md`) in your Obsidian vault.
+- **`/brainstorm`** — Runs a topic-agnostic, one-question-per-turn brainstorming interview and exports one structured Markdown document with explicit success criteria and optional Mermaid diagrams.
 - **`/edit-prdd` / `edit_prdd`** — Updates/edits an existing bilingual Product Requirements & Design Document (PRDD) in your Obsidian vault, keeping the Bahasa Indonesia and English versions in sync.
 - **`/edit-ticket` / `edit_ticket`** — Updates summary, description, or assignee on existing Jira tickets.
 - **`/release-workflow` / `release_workflow`** — Creates Jira release versions for Ready for Release tickets and generates markdown release notes.
@@ -74,6 +75,7 @@ Commands automatically registered:
 - `/daily-standup [assigneeName]`
 - `/create-ticket <summary>`
 - `/create-prdd <product-name>`
+- `/brainstorm [topic] [--quick|--deep]`
 - `/edit-prdd <product-name>`
 - `/edit-ticket <issueKey>`
 - `/sprint-report`
@@ -109,6 +111,7 @@ Add to your `~/.claude.json` or project `.mcp.json`:
 This repo contains pre-packaged skills in `.claude/skills/`:
 - `.claude/skills/create-ticket`
 - `.claude/skills/create-prdd`
+- `.claude/skills/brainstorm`
 - `.claude/skills/edit-prdd`
 - `.claude/skills/edit-ticket`
 - `.claude/skills/release-workflow`
@@ -206,6 +209,9 @@ npx openpm-tools create-ticket "Fix payment gateway timeout" --type bug --sprint
 # View PRDD creation guide
 npx openpm-tools create-prdd "MyApp"
 
+# View the topic-agnostic brainstorming guide (agent generates the Markdown)
+npx openpm-tools brainstorm "team onboarding" --json
+
 # View PRDD editing guide
 npx openpm-tools edit-prdd "MyApp"
 
@@ -281,6 +287,26 @@ npx openpm-tools create-prdd [product-name] [--json]
 **Codex / OpenCode / Claude Code:**
 - `/create-prdd [product-name]`
 
+### `brainstorm` Command & Skill
+
+Run `/brainstorm [topic]` in an AI agent for a bounded, topic-agnostic interview. The agent asks one
+substantive question per turn and exports exactly one collision-safe Markdown file named
+`Brainstorm - <sanitized-topic> - <YYYY-MM-DD>.md` to the selected directory (current working
+directory by default). Standard sessions separate divergent idea generation from clustering and
+prioritization and include at least eight ideas unless fewer are requested. Missing details are
+marked `TBD` or `N/A`. The exported document includes explicit success criteria, and ideas are not
+presented as research or professional advice.
+
+Mermaid is optional: it is included only when a simple diagram materially clarifies relationships,
+stages, dependencies, or choices, with a prose explanation alongside it. Simple topics remain
+diagram-free. The standalone CLI is guide-only and does not conduct the interview or write the file:
+
+```bash
+npx openpm-tools brainstorm [topic] [--quick|--deep] [--out <directory>] [--json]
+```
+
+The JSON guide reports the command, topic, output convention, session stages, and Mermaid policy.
+
 ---
 
 ### `extract-knowledge` Command & MCP Tool
@@ -325,7 +351,7 @@ openpm-tools/
 ├── .claude/skills/          # Claude Code skill manifests
 ├── .codex/skills/            # Codex project skill manifests
 ├── AGENTS.md                 # Codex/repository working guidance
-├── .opencode/command/       # OpenCode command definitions (create-prdd.md)
+├── .opencode/command/       # OpenCode command definitions (brainstorm.md, create-prdd.md)
 └── opencode.json            # OpenCode command registrations
 ```
 

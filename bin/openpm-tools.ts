@@ -57,6 +57,12 @@ Commands:
   create-prdd [productName]
     Print guidelines for creating a bilingual PRDD (Obsidian Vault).
 
+  brainstorm [topic] [options]
+    Print the interactive brainstorming workflow guide (agent-generated Markdown).
+    --quick                       Use a shorter ideation session
+    --deep                        Use the full bounded session
+    --out <directory>             Suggested Markdown output directory
+
   edit-prdd [productName]
     Print guidelines for editing a bilingual PRDD (Obsidian Vault).
 
@@ -76,7 +82,7 @@ Global Options:
 function parseArgs(args: string[]) {
   const flags: Record<string, string | boolean> = {};
   const positional: string[] = [];
-  const BOOLEAN_FLAGS = new Set(['llm', 'overwrite', 'json']);
+  const BOOLEAN_FLAGS = new Set(['llm', 'overwrite', 'json', 'quick', 'deep']);
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -297,6 +303,65 @@ async function main() {
           console.log(`=== PRDD Creation Guide for "${prodName}" ===`);
           console.log('Run via AI Agent (Codex / OpenCode / Claude Code / Hermes / OpenClaw / Antigravity):');
           console.log('Use slash command /create-prdd to start 9-section bilingual interview.');
+        }
+        break;
+      }
+
+      case 'brainstorm': {
+        if (flags.quick && flags.deep) {
+          console.error('Error: brainstorm cannot use --quick and --deep together');
+          process.exit(1);
+        }
+        if ('out' in flags && typeof flags.out !== 'string') {
+          console.error('Error: brainstorm --out requires a directory value');
+          process.exit(1);
+        }
+        const topic = positional.join(' ').trim() || undefined;
+        const guide = {
+          command: 'brainstorm',
+          topic: topic || null,
+          description: 'Topic-agnostic interactive brainstorming workflow; the CLI prints guidance and does not generate the Markdown itself.',
+          invocation: '/brainstorm [topic] [--quick|--deep] [--out <directory>]',
+          output: {
+            format: 'Markdown',
+            count: 1,
+            directory: (flags.out as string) || 'current working directory (or user-selected directory)',
+            filename: 'Brainstorm - <sanitized-topic> - <YYYY-MM-DD>.md',
+            collisionPolicy: 'append a numeric suffix; never overwrite silently',
+          },
+          session: {
+            mode: flags.deep ? 'deep' : flags.quick ? 'quick' : 'standard',
+            maxTurns: flags.deep ? 10 : flags.quick ? 6 : 10,
+            ideaRequirement: flags.quick
+              ? 'fewer than 8 allowed'
+              : 'at least 8 distinct ideas unless the user explicitly requests fewer',
+            cadence: 'one substantive question per turn',
+            earlyFinishSignals: ['finish', 'done', 'export'],
+            sections: [
+              'Objective & Context',
+              'Constraints & Non-Goals',
+              'Assumptions & Evidence Boundaries',
+              'Success Criteria',
+              'Divergent Ideas',
+              'Themes & Clusters',
+              'Prioritization Criteria & Rationale',
+              'Recommended Directions & Trade-offs',
+              'Open Questions & Risks',
+              'Next Actions',
+            ],
+          },
+          mermaid: {
+            policy: 'Include only when it materially clarifies relationships, stages, dependencies, or choices; omit decorative diagrams.',
+            requirement: 'If included, use a valid mermaid fenced block, explain it in one sentence, and retain an equivalent prose explanation.',
+          },
+        };
+        if (isJson) {
+          console.log(JSON.stringify(guide, null, 2));
+        } else {
+          console.log(`=== Brainstorming Guide${topic ? ` for "${topic}"` : ''} ===`);
+          console.log('Run via an AI agent with /brainstorm [topic] to conduct the one-question-per-turn interview.');
+          console.log(`The agent exports one Markdown file: ${guide.output.filename}`);
+          console.log('The CLI is guide-only; it does not run the interview or write the document.');
         }
         break;
       }
