@@ -26,16 +26,16 @@
       "template": "Follow instructions in .opencode/command/daily-standup.md to generate the daily standup report. Arguments: $ARGUMENTS"
     },
     "create-prdd": {
-      "description": "Creates a bilingual Product Requirements & Design Document (PRDD) in your Obsidian vault through a 9-section interview, then writes two files (Indonesian `PRDD - <Name> (ID).md` and English `PRDD - <Name> (EN).md`) under `01 Projects/PRDs/<Project>/` and updates the `Daftar PRDD.md` index.",
-      "template": "Follow instructions in .opencode/command/create-prdd.md to conduct the 9-section interview and generate the bilingual PRDD. Arguments: $ARGUMENTS"
+      "description": "Creates a Product Requirements & Design Document (PRDD) in your Obsidian vault through a 9-section interview, then writes English `PRDD - <Name> (EN).md` under `01 Projects/PRDs/<Project>/` and updates the `Daftar PRDD.md` index.",
+      "template": "Follow instructions in .opencode/command/create-prdd.md to conduct the 9-section interview and generate the PRDD. Arguments: $ARGUMENTS"
     },
     "brainstorm": {
       "description": "Runs a topic-agnostic brainstorming interview and exports one collision-safe Markdown file. Usage: /brainstorm [topic] [--quick|--deep] [--out <directory>]",
       "template": "Follow instructions in .opencode/command/brainstorm.md to conduct the brainstorming interview and export one Markdown file. Arguments: $ARGUMENTS"
     },
     "edit-prdd": {
-      "description": "Edits/updates an existing bilingual Product Requirements & Design Document (PRDD) in your Obsidian vault. Jaga keselarasan versi Bahasa Indonesia dan English. Usage: /edit-prdd [product-name]",
-      "template": "Follow instructions in .opencode/command/edit-prdd.md to locate, interview, update, and synchronize the bilingual PRDD target files. Arguments: $ARGUMENTS"
+      "description": "Edits/updates an existing Product Requirements & Design Document (PRDD) in your Obsidian vault (`PRDD - <Name> (EN).md`). Usage: /edit-prdd [product-name]",
+      "template": "Follow instructions in .opencode/command/edit-prdd.md to locate, interview, update, and synchronize the PRDD target file. Arguments: $ARGUMENTS"
     },
     "extract-knowledge": {
       "description": "Extract document files (.docx, .pdf, .pptx, .xlsx, .md, .csv) into AI-friendly knowledge markdown in Obsidian vault. Usage: /extract-knowledge <file-or-folder> [--llm] [--out <dir>] [--overwrite] [--vault <path>] [--json]",
