@@ -9,9 +9,11 @@ AI Product Manager (PM) toolkit for Jira & Bitbucket: create Jira tickets, gener
 - **`/review-pr` / `fetch_pr_review` & `post_pr_review`** — Fetches PR diffs from Bitbucket, generates structured review prompts, performs PR hygiene alerts (missing description / linked Jira tickets), posts inline + summary findings to Bitbucket, and cross-references linked Jira issues with actionable next steps.
 - **`/daily-standup` / `daily_standup`** — Generates real-time Daily Standup Reports in Markdown format from Jira activities (Yesterday's Progress, Today's Focus, Risks & Blockers).
 - **`/create-ticket` / `create_ticket`** — Creates a Jira ticket assigned to the active sprint with auto-structured templates (Task, Bug, Story, Epic, Story Points, Assignee).
-- **`/create-prdd` / `create_prdd`** — Conducts a 9-section interview to generate an English Product Requirements & Design Document (`PRDD - <Name> (EN).md`) in your Obsidian vault.
+- **`/create-prdd` / `create_prdd`** — Uses source evidence and focused questions to generate an English Product Requirements & Design Document (`PRDD - <Name> (EN).md`) in your Obsidian vault.
 - **`/brainstorm`** — Runs a topic-agnostic, one-question-per-turn brainstorming interview and exports one structured Markdown document with explicit success criteria and optional Mermaid diagrams.
-- **`/edit-prdd` / `edit_prdd`** — Updates/edits the English Product Requirements & Design Document (PRDD) in your Obsidian vault.
+- **`/edit-prdd`** — Updates/edits the English Product Requirements & Design Document (PRDD) in your Obsidian vault.
+- **`product-documentation`** — Creates and maintains an English product hub linking requirements, technical designs, delivery, operations, and user documentation.
+- **`technical-docs`** — Creates and edits English technical documentation with a fixed 10-section system-documentation structure in your Obsidian vault.
 - **`/edit-ticket` / `edit_ticket`** — Updates summary, description, or assignee on existing Jira tickets.
 - **`/release-workflow` / `release_workflow`** — Creates Jira release versions for Ready for Release tickets and generates markdown release notes.
 - **`/sprint-report` / `sprint_report`** — Generates complete sprint health reports with burndown metrics, assignee distribution, and HTML export.
@@ -23,7 +25,7 @@ AI Product Manager (PM) toolkit for Jira & Bitbucket: create Jira tickets, gener
 
 ### Prerequisites
 
-- Node.js 20+
+- Node.js 20.19+ (20.x), 22.13+ (22.x), or 24+; required by the Mermaid renderer's JSDOM dependency.
 - Atlassian credentials (for Jira/Bitbucket features):
   - **Bitbucket API token** ([App Passwords](https://bitbucket.org/account/settings/app-passwords/))
   - **Jira API token** ([API Tokens](https://id.atlassian.com/manage-profile/security/api-tokens))
@@ -66,7 +68,11 @@ npm run cli -- sprint-report --export-html
 npm run mcp
 ```
 
-For a Codex skill that is not present in an older checkout, use the equivalent CLI command documented below. The CLI and MCP server share the same `.env` configuration.
+The CLI and MCP server share the same `.env` configuration. PRDD CLI commands and `create_prdd` return guides; the agent reads sources, asks focused questions, and writes the document. `technical-docs` and `product-documentation` are Codex skills only, with no CLI command or MCP tool.
+
+Jira descriptions support Markdown fenced code blocks and Jira wiki `{code:language}` blocks. Creating or editing a description with a `mermaid` block renders an SVG, uploads it as an issue attachment, and adds an inline media reference beside the retained source. Jira credentials need attachment-upload permission, and attachments must be enabled.
+
+Creation stores the source description before rendering. If rendering, upload, or the description update fails, the error identifies the created issue; inspect and edit that issue instead of creating a duplicate. Sprint assignment has not yet run when enrichment fails. On edits, enrichment happens before the fields update, so a failure leaves the existing fields unchanged; uploaded attachments can remain after a later failure. Repeated edits upload new attachments. The server renderer uses approximate label sizes, so complex diagrams may overlap. Inline display in Jira has not been verified against a live instance.
 
 ### 2. OpenCode
 Pre-configured via `opencode.json` and `.opencode/command/`. Just clone into your workspace directory.
@@ -186,7 +192,7 @@ For production setups, a **Combined (Hybrid)** architecture is recommended:
 │ (Codex / OpenCode / Claude)  │                         │  (Hermes-Agent / OpenClaw)   │
 ├──────────────────────────────┤                         ├──────────────────────────────┤
 │ - Direct CLI & slash cmds    │                         │ - Telegram / Slack / Webhook │
-│ - Interactive 9-step PRDD    │                         │ - Automated sprint triggers  │
+│ - Evidence-led PRDD guides   │                         │ - Automated sprint triggers  │
 │ - Local terminal workflows   │                         │ - PR review on git push/hook │
 └──────────────────────────────┘                         └──────────────────────────────┘
 ```
@@ -277,7 +283,7 @@ npx openpm-tools edit-prdd [product-name] [--json]
 
 ### `create-prdd` Command & Skill
 
-Conduct a 9-section interview or parse attached documents to generate one English PRDD (`PRDD - <Name> (EN).md`) under `<VAULT>/01 Projects/PRDs/<Project>/` and update the `Daftar PRDD.md` index.
+Inspect source evidence and ask focused questions to generate one English nine-section PRDD (`PRDD - <Name> (EN).md`) under `<VAULT>/01 Projects/PRDs/<Project>/` and update the `Daftar PRDD.md` index.
 
 **CLI Usage:**
 ```bash
@@ -286,6 +292,29 @@ npx openpm-tools create-prdd [product-name] [--json]
 
 **Codex / OpenCode / Claude Code:**
 - `/create-prdd [product-name]`
+
+PRDD requirements keep MoSCoW scope (`Must`, `Should`, `Could`, `Won't`) separate from release priority (`P0`, `P1`, `P2`). Creation preserves an existing file; edits update affected cross-references and version history. Keep exact schema and API identifiers, label unsupported facts `TBD` or `Unverified`, and validate Mermaid diagrams with an available parser or renderer.
+
+### `product-documentation` Skill
+
+Use the Codex skill to create or maintain a product hub linking canonical delivery documents:
+
+- Skill instructions: `.codex/skills/product-documentation/SKILL.md`
+- Output folder: `<VAULT>/01 Projects/Product Documentation/`
+- Filename: `Product Documentation - <Name>.md`
+- Index: `Daftar Product Documentation.md`, with one English wikilink per hub
+- Structure: ten sections covering ownership, evidence, outcomes, scope, journeys, delivery, releases, operations, risks, and the documentation map
+- Link PRDDs, technical designs, Jira, runbooks, and user guides rather than duplicating them. Preserve actual verification dates for delivery and release snapshots.
+
+### `technical-docs` Skill
+
+Use the Codex skill for system, architecture, or technical design documentation:
+
+- Skill instructions: `.codex/skills/technical-docs/SKILL.md`
+- Output folder: `<VAULT>/01 Projects/Technical Documentation/`
+- Filename: `Technical Documentation - <Name>.md`
+- Required structure: 10 English sections covering architecture, security, data model, stack, and UI navigation
+- The skill updates `Daftar Technical Documentation.md`, preserves technical identifiers, validates Mermaid structure, and records version history after edits.
 
 ### `brainstorm` Command & Skill
 
@@ -349,7 +378,7 @@ openpm-tools/
 │   ├── sprint-report/
 │   └── review-pr/
 ├── .claude/skills/          # Claude Code skill manifests
-├── .codex/skills/            # Codex project skill manifests
+├── .codex/skills/           # Codex skills, including technical-docs and product-documentation
 ├── AGENTS.md                 # Codex/repository working guidance
 ├── .opencode/command/       # OpenCode command definitions (brainstorm.md, create-prdd.md)
 └── opencode.json            # OpenCode command registrations
@@ -359,8 +388,10 @@ openpm-tools/
 
 ## Development & Testing
 
+Before pushing, synchronize affected agent guides, run `npm test`, and run `git diff --check`. Keep local vault exports, authentication QR images, and `.env` out of commits. The repository currently has no lint or build script.
+
 ```bash
-# Run unit tests
+# Run unit tests (Jira/Bitbucket calls are mocked)
 npm test
 
 # Run MCP server locally

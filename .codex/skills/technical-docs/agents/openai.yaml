@@ -1,0 +1,4 @@
+interface:
+  display_name: "Technical Docs"
+  short_description: "Create and edit technical documentation"
+  default_prompt: "Create or edit an English technical documentation file in the Obsidian vault."

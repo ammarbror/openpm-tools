@@ -1,4 +1,5 @@
 import type { JiraConfig, JiraVersion, CreateVersionParams } from './types.ts';
+import { renderMermaidSvg } from './mermaid.ts';
 
 function buildAuthHeader(config: JiraConfig): string {
   const encoded = Buffer.from(`${config.email}:${config.apiToken}`).toString('base64');
@@ -191,6 +192,25 @@ export function textToADF(text: string): Record<string, unknown> {
       continue;
     }
 
+    // Markdown fenced code blocks, including ```mermaid diagrams.
+    const fence = trimmed.match(/^```([a-zA-Z0-9_-]*)\s*$/);
+    if (fence) {
+      const language = fence[1] || undefined;
+      const codeLines: string[] = [];
+      i++;
+      while (i < lines.length && lines[i].trim() !== '```') {
+        codeLines.push(lines[i]);
+        i++;
+      }
+      if (i < lines.length) i++;
+      content.push({
+        type: 'codeBlock',
+        ...(language ? { attrs: { language } } : {}),
+        content: [{ type: 'text', text: codeLines.join('\n') }],
+      });
+      continue;
+    }
+
     // checkbox items (- [ ] / - [x]) → bulletList with [ ] or [x] prefix
     // Jira Cloud does NOT support ADF taskList, so we render as bullets
     if (/^- \[[ x]\]\s/.test(trimmed)) {
@@ -318,6 +338,77 @@ export interface CreateIssueParams {
   customFields?: Record<string, unknown>;
 }
 
+function hasMermaidCodeBlock(description: string): boolean {
+  return /```mermaid\s*\n[\s\S]*?```/i.test(description) ||
+    /\{code:mermaid\}\s*\n[\s\S]*?\{code\}/i.test(description);
+}
+
+function mediaSingle(url: string, alt: string): Record<string, unknown> {
+  return {
+    type: 'mediaSingle',
+    attrs: { layout: 'center' },
+    content: [{ type: 'media', attrs: { type: 'external', url, alt } }],
+  };
+}
+
+async function uploadIssueAttachment(
+  config: JiraConfig,
+  issueKey: string,
+  filename: string,
+  svg: string,
+): Promise<{ content: string }> {
+  const url = `${config.baseUrl}/rest/api/3/issue/${issueKey}/attachments`;
+  const form = new FormData();
+  form.append('file', new Blob([svg], { type: 'image/svg+xml' }), filename);
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: buildAuthHeader(config),
+      Accept: 'application/json',
+      'X-Atlassian-Token': 'no-check',
+    },
+    body: form,
+  });
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => '');
+    throw new Error(`Jira attachment upload error: ${response.status}${body ? ` — ${body}` : ''}`);
+  }
+
+  const attachments = await response.json() as { content?: string }[];
+  const attachment = attachments[0];
+  if (!attachment?.content) throw new Error('Jira attachment upload returned no content URL.');
+  return { content: attachment.content };
+}
+
+/** Convert Mermaid blocks to Jira media nodes while retaining their source. */
+export async function descriptionToADF(
+  config: JiraConfig,
+  issueKey: string,
+  description: string,
+): Promise<Record<string, unknown>> {
+  const doc = textToADF(description);
+  const content = Array.isArray(doc.content) ? doc.content as Record<string, unknown>[] : [];
+  const enriched: Record<string, unknown>[] = [];
+  let diagramIndex = 0;
+
+  for (const node of content) {
+    enriched.push(node);
+    const attrs = node.attrs as { language?: string } | undefined;
+    if (node.type !== 'codeBlock' || attrs?.language?.toLowerCase() !== 'mermaid') continue;
+    const source = (node.content as { text?: string }[] | undefined)?.[0]?.text;
+    if (!source?.trim()) continue;
+
+    diagramIndex++;
+    const svg = await renderMermaidSvg(source, `jira-mermaid-${issueKey}-${diagramIndex}`);
+    const filename = `${issueKey.toLowerCase()}-mermaid-${diagramIndex}.svg`;
+    const attachment = await uploadIssueAttachment(config, issueKey, filename, svg);
+    enriched.push(mediaSingle(attachment.content, `Rendered Mermaid diagram ${diagramIndex}`));
+  }
+
+  return { ...doc, content: enriched };
+}
+
 export interface CreateIssueResult {
   key: string;
   self: string;
@@ -354,7 +445,9 @@ export async function updateIssue(
   }
 
   if (fields.description !== undefined) {
-    bodyFields.description = textToADF(fields.description);
+    bodyFields.description = hasMermaidCodeBlock(fields.description)
+      ? await descriptionToADF(config, issueKey, fields.description)
+      : textToADF(fields.description);
   }
 
   if (fields.assigneeAccountId !== undefined) {
@@ -405,6 +498,14 @@ export async function createIssue(
     method: 'POST',
     body: JSON.stringify(body),
   });
+
+  if (params.description && hasMermaidCodeBlock(params.description)) {
+    try {
+      await updateIssue(config, data.key, { description: params.description });
+    } catch (error) {
+      throw new Error(`Issue ${data.key} was created with its source description, but Mermaid enrichment failed: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
+    }
+  }
 
   return data;
 }

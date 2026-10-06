@@ -1,26 +1,38 @@
 ---
 name: review-pr
-description: Perform automated LLM code review on Bitbucket PR and post findings to Bitbucket and Jira
+description: Review a Bitbucket pull request for definitive bugs, hygiene issues, and linked Jira follow-up, then post findings when requested.
 ---
 
-# Review PR Skill
+# Review PR
 
-Automated Bitbucket PR code review with Jira cross-referencing, PR hygiene checks, and actionable next steps.
+## Explain the source PR
 
-## Workflow
+After fetching the PR, first explain what the source branch changes. Keep this
+separate from review findings:
 
-1. **Fetch PR metadata & diff:**
-   ```bash
-   npx openpm-tools fetch-pr-review "<bitbucket-pr-url>" --json
-   ```
+- Summarize the actual diff in 2–5 concise bullets, grouped by behavior or area.
+- Use the source diff and commit metadata as evidence; do not infer unimplemented
+  work or describe unrelated target-branch code.
+- Mention notable API, data, configuration, deployment, or user-facing changes
+  when present.
+- Label this section `Changes from source PR` in the response before the review
+  result.
 
-2. **Analyze diff & metadata:**
-   - **Severity Levels:** `CRITICAL` (security/data loss), `HIGH` (logic bugs/race conditions), `BUG` (unhandled null/crash).
-   - **Rules:** Ignore style, refactoring, formatting, or subjective nitpicks. Only flag definitive bugs.
-   - **Hygiene Alerts:** Check `metadata.qualityWarnings` (missing PR description, unlinked Jira tickets).
+Fetch metadata and the diff:
 
-3. **Post Findings & Cross-References:**
-   ```bash
-   npx openpm-tools post-pr-review "<bitbucket-pr-url>" '[{"severity":"HIGH","file":"src/app.ts","line":12,"message":"Unsanitized input reaching SQL query."}]'
-   ```
+```bash
+npx openpm-tools fetch-pr-review "<bitbucket-pr-url>" --json
+```
 
+Review only definitive bugs: `CRITICAL` for security/data loss, `HIGH` for logic bugs or race conditions, and `BUG` for unhandled null/crash behavior. Ignore style, formatting, refactoring, and subjective nitpicks. Check `metadata.qualityWarnings` for missing PR descriptions or unlinked Jira tickets.
+
+After every review, automatically publish the review result to Bitbucket and linked Jira:
+
+- If findings exist, post the structured findings JSON:
+
+```bash
+npx openpm-tools post-pr-review "<bitbucket-pr-url>" '[{"severity":"HIGH","file":"src/app.ts","line":12,"title":"Definitive bug","description":"..."}]'
+```
+
+- If no findings exist, post an empty findings array (`[]`). The CLI creates the explicit `NO ISSUES FOUND` review comment and includes any quality warnings.
+- This automatic publication is part of the review workflow; do not wait for a separate authorization request.

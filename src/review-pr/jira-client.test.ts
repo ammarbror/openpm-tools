@@ -8,6 +8,10 @@ import {
   getProject,
   createVersion,
   addFixVersionToIssue,
+  descriptionToADF,
+  textToADF,
+  createIssue,
+  updateIssue,
 } from './jira-client.js';
 import type { JiraConfig, CreateVersionParams } from './types.js';
 
@@ -132,6 +136,107 @@ void describe('addIssueComment', () => {
     };
 
     await addIssueComment('PROJ-42', config, 'Reviewed by automation.');
+  });
+});
+
+void describe('Mermaid Jira descriptions', () => {
+  void it('creates with source, uploads the diagram, then updates the same issue', async () => {
+    const description = '{code:mermaid}\nsequenceDiagram\n A->>B: Hello\n{code}';
+    const methods: string[] = [];
+    globalThis.fetch = async (url: RequestInfo | URL, init?: RequestInit) => {
+      methods.push(init?.method ?? 'GET');
+      if (String(url).endsWith('/attachments')) {
+        assert.ok(init?.body instanceof FormData);
+        return new Response(JSON.stringify([{ content: 'https://example.com/diagram.svg' }]), {
+          status: 200, headers: { 'content-type': 'application/json' },
+        });
+      }
+      const body = JSON.parse(init?.body as string);
+      if (init?.method === 'PUT') {
+        assert.ok(String(url).endsWith('/PROJ-42'));
+        assert.equal(body.fields.description.content[1].type, 'mediaSingle');
+        return new Response(null, { status: 204 });
+      }
+      assert.deepStrictEqual(body.fields.description, textToADF(description));
+      return new Response(JSON.stringify({ key: 'PROJ-42', self: 'issue-url' }), {
+        status: 201, headers: { 'content-type': 'application/json' },
+      });
+    };
+    assert.equal((await createIssue(config, { summary: 'Diagram', description })).key, 'PROJ-42');
+    assert.deepStrictEqual(methods, ['POST', 'POST', 'PUT']);
+  });
+
+  void it('does not update existing fields when diagram rendering fails', async () => {
+    globalThis.fetch = async () => { assert.fail('No Jira request should be made'); };
+    await assert.rejects(updateIssue(config, 'PROJ-42', {
+      summary: 'Changed', description: '```mermaid\nnot a diagram\n```',
+    }));
+  });
+
+  void it('retains the source description and identifies the created issue when SVG upload fails', async () => {
+    const description = '```mermaid\nsequenceDiagram\n A->>B: Hello\n```';
+    const calls: string[] = [];
+    globalThis.fetch = async (url: RequestInfo | URL, init?: RequestInit) => {
+      calls.push(String(url));
+      if (String(url).endsWith('/attachments')) {
+        return new Response('Attachments disabled', { status: 403 });
+      }
+      assert.equal(init?.method, 'POST');
+      const body = JSON.parse(init?.body as string);
+      assert.deepStrictEqual(body.fields.description, textToADF(description));
+      return new Response(JSON.stringify({ key: 'PROJ-42', self: 'issue-url' }), {
+        status: 201, headers: { 'content-type': 'application/json' },
+      });
+    };
+    await assert.rejects(createIssue(config, { summary: 'Diagram', description }), /PROJ-42.*source description.*403/);
+    assert.equal(calls.length, 2);
+  });
+
+  void it('parses fenced Mermaid source as a language-aware code block', () => {
+    const doc = textToADF('Before\n\n```mermaid\nsequenceDiagram\n A->>B: Hello\n```');
+    assert.deepStrictEqual(doc.content, [
+      { type: 'paragraph', content: [{ type: 'text', text: 'Before' }] },
+      {
+        type: 'codeBlock',
+        attrs: { language: 'mermaid' },
+        content: [{ type: 'text', text: 'sequenceDiagram\n A->>B: Hello' }],
+      },
+    ]);
+  });
+
+  void it('renders Mermaid and adds an inline media node after uploading SVG', async () => {
+    let uploadCalled = false;
+    globalThis.fetch = async (url: RequestInfo | URL, init?: RequestInit) => {
+      assert.equal(url, 'https://my-domain.atlassian.net/rest/api/3/issue/PROJ-42/attachments');
+      assert.equal(init?.method, 'POST');
+      assert.ok(init?.body instanceof FormData);
+      uploadCalled = true;
+      return new Response(
+        JSON.stringify([{ content: 'https://my-domain.atlassian.net/rest/api/3/attachment/content/42' }]),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      );
+    };
+
+    const doc = await descriptionToADF(
+      config,
+      'PROJ-42',
+      '```mermaid\nsequenceDiagram\n A->>B: Hello\n```',
+    );
+    const content = doc.content as Record<string, unknown>[];
+    assert.equal(uploadCalled, true);
+    assert.equal(content[0].type, 'codeBlock');
+    assert.equal(content[1].type, 'mediaSingle');
+    assert.deepStrictEqual(
+      (content[1].content as Record<string, unknown>[])[0],
+      {
+        type: 'media',
+        attrs: {
+          type: 'external',
+          url: 'https://my-domain.atlassian.net/rest/api/3/attachment/content/42',
+          alt: 'Rendered Mermaid diagram 1',
+        },
+      },
+    );
   });
 });
 

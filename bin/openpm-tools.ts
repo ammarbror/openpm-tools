@@ -285,7 +285,7 @@ async function main() {
             '1. Overview & Problem Statement',
             '2. Goals & Success Metrics',
             '3. User Stories / Use Cases',
-            '4. Functional Requirements (MoSCoW)',
+            '4. Functional Requirements (MoSCoW scope; release priority P0/P1/P2)',
             '5. System Architecture (Mermaid flowchart TD)',
             '6. Database Schema / ERD (Mermaid erDiagram)',
             '7. API Contract (Endpoints & Mermaid sequenceDiagram)',
@@ -299,7 +299,7 @@ async function main() {
         } else {
           console.log(`=== PRDD Creation Guide for "${prodName}" ===`);
           console.log('Run via AI Agent (Codex / OpenCode / Claude Code / Hermes / OpenClaw / Antigravity):');
-          console.log('Use slash command /create-prdd to start a 9-section English-only interview.');
+          console.log('Use slash command /create-prdd to inspect sources, ask focused questions, and write one English nine-section PRDD.');
         }
         break;
       }
@@ -375,7 +375,7 @@ async function main() {
             '1. Overview & Problem Statement',
             '2. Goals & Success Metrics',
             '3. User Stories / Use Cases',
-            '4. Functional Requirements (MoSCoW)',
+            '4. Functional Requirements (MoSCoW scope; release priority P0/P1/P2)',
             '5. System Architecture (Mermaid flowchart TD)',
             '6. Database Schema / ERD (Mermaid erDiagram)',
             '7. API Contract (Endpoints & Mermaid sequenceDiagram)',

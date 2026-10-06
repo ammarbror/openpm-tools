@@ -301,12 +301,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 {
                   productName: prodName,
                   vaultPath,
-                  instructions: 'Conduct a 9-section interview with the user (Overview, Goals/Metrics, User Stories, Functional Requirements MoSCoW, System Architecture, Database Schema ERD, API Contract, Non-Functional Requirements, Dependencies & Risks). Resolve vault path dynamically (OBSIDIAN_VAULT_PATH env -> home dir -> user prompt). Write one English-only file, PRDD - <Name> (EN).md, under <VAULT>/01 Projects/PRDs/<sanitized-name>/ and append its link to Daftar PRDD.md. Do not create or modify an Indonesian file.',
+                  instructions: 'Inspect source evidence and ask only focused questions for missing decisions to generate nine sections (Overview, Goals/Metrics, User Stories, Functional Requirements with separate MoSCoW scope and release priority, System Architecture, Database Schema ERD, API Contract, Non-Functional Requirements, Dependencies & Risks). Resolve vault path dynamically (OBSIDIAN_VAULT_PATH env -> home dir -> user prompt). Write one English-only file, PRDD - <Name> (EN).md, under <VAULT>/01 Projects/PRDs/<sanitized-name>/ and append its link to Daftar PRDD.md. Do not create or modify an Indonesian file.',
                   sections: [
                     '1. Overview & Problem Statement',
                     '2. Goals & Success Metrics (with Non-Goals)',
                     '3. User Stories / Use Cases',
-                    '4. Functional Requirements (MoSCoW P0/P1/P2)',
+                    '4. Functional Requirements (MoSCoW scope; release priority P0/P1/P2)',
                     '5. System Architecture (Mermaid flowchart TD)',
                     '6. Database Schema / ERD (Mermaid erDiagram)',
                     '7. API Contract (Endpoints & Mermaid sequenceDiagram)',
