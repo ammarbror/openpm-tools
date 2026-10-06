@@ -1,5 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
+import { usesNotion } from '../documents/notion.ts';
 import { parseDocument } from './parser.js';
 import { assembleKnowledgeMarkdown, sanitizeFilename } from './assembler.js';
 import { enhanceWithLLM } from './llm.js';
@@ -22,6 +24,7 @@ export interface SingleFileResult {
 }
 
 export interface ExtractKnowledgeResult {
+  publicationStatus?: 'pending';
   totalFiles: number;
   processedCount: number;
   skippedCount: number;
@@ -60,7 +63,9 @@ export async function extractKnowledgeWorkflow(
   const files = resolveFiles(params.source);
   const targetDir = params.out
     ? path.resolve(params.out)
-    : path.join(resolveVaultPath({ vaultPath: params.vault }), '00 Knowledge');
+    : usesNotion() && !params.vault
+      ? fs.mkdtempSync(path.join(os.tmpdir(), 'openpm-notion-'))
+      : path.join(resolveVaultPath({ vaultPath: params.vault }), '00 Knowledge');
 
   ensureDirExist(targetDir);
 
@@ -120,6 +125,7 @@ export async function extractKnowledgeWorkflow(
   }
 
   return {
+    ...(usesNotion() ? { publicationStatus: 'pending' as const } : {}),
     totalFiles: files.length,
     processedCount,
     skippedCount,
@@ -144,6 +150,10 @@ export async function runFromEnv(params: ExtractKnowledgeParams): Promise<string
     ``,
     `Details:`,
   ];
+
+  if (result.publicationStatus === 'pending') {
+    lines.push('Notion publication pending: these files are local drafts. Publish through the connected Notion MCP server and verify the saved pages.', '');
+  }
 
   for (const res of result.results) {
     if (res.status === 'created') {

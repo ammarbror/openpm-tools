@@ -6,7 +6,7 @@
     "openpm-tools": "./bin/openpm-tools.ts"
   },
   "scripts": {
-    "mcp": "tsx src/mcp/index.ts",
+    "mcp": "node scripts/start-mcp.mjs",
     "cli": "tsx bin/openpm-tools.ts",
     "test": "npx tsx --test src/**/*.test.ts"
   },

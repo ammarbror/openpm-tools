@@ -23,6 +23,25 @@ AI Product Manager (PM) toolkit for Jira & Bitbucket: create Jira tickets, gener
 
 ## Getting Started
 
+### Use Notion across devices
+
+Set `DOCUMENTS_PROVIDER=notion` in `.env`. Connect the official Notion MCP server
+alongside openpm-tools:
+
+```powershell
+codex mcp add notion --url https://mcp.notion.com/mcp
+codex mcp login notion
+```
+
+Complete browser authorization, then open a new Codex chat to load the connection.
+Use an OpenPM hub and optionally save its URL as `NOTION_ROOT_PAGE_URL` in `.env`.
+PRDD CLI/MCP guides select Notion automatically. Document skills retain their
+existing content requirements but use Notion page storage as described in
+`docs/notion-workflow.md`. Knowledge extraction stages Markdown locally when no
+explicit output or vault is supplied; the agent publishes it through Notion tools.
+Neither the guides nor extraction upload documents automatically. Other devices
+need their own Notion connection and local toolkit setup, but share cloud documents.
+
 ### Prerequisites
 
 - Node.js 20.19+ (20.x), 22.13+ (22.x), or 24+; required by the Mermaid renderer's JSDOM dependency.
@@ -67,6 +86,24 @@ npx openpm-tools create-ticket "Fix payment gateway timeout" --type bug
 npm run cli -- sprint-report --export-html
 npm run mcp
 ```
+
+For Codex Desktop on Windows, register the server with absolute paths:
+
+```powershell
+codex mcp add openpm-tools -- "C:\path\to\node.exe" "C:\path\to\openpm-tools\scripts\start-mcp.mjs"
+codex mcp get openpm-tools
+```
+
+Use the installed Node executable rather than a temporary shell alias. The launcher
+loads `.env` from this checkout regardless of the workspace Codex opens. Restart
+Codex Desktop after registration so a new chat can discover the tools. Fill in the
+checkout's `.env` for Jira, Bitbucket, or Obsidian features; do not put tokens in chat.
+The nine MCP tools include `create_prdd`; additional document and brainstorming
+workflows are project-local skills under `.codex/skills/`, available when this
+repository is opened as the Codex workspace.
+
+Verify the MCP connection, guide output, and local document extraction without
+external credentials using `node scripts/smoke-mcp.mjs`.
 
 The CLI and MCP server share the same `.env` configuration. PRDD CLI commands and `create_prdd` return guides; the agent reads sources, asks focused questions, and writes the document. `technical-docs` and `product-documentation` are Codex skills only, with no CLI command or MCP tool.
 

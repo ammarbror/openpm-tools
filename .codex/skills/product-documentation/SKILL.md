@@ -3,6 +3,23 @@ name: product-documentation
 description: Create or maintain an English product documentation hub that connects product strategy, delivery, operations, and user documentation without duplicating PRDs or technical designs.
 ---
 
+## Document destination
+
+Check `DOCUMENTS_PROVIDER` in the repository configuration before choosing storage.
+Use the configured provider and `NOTION_ROOT_PAGE_URL` automatically; do not ask
+the user to select storage again. An explicit user destination overrides this
+default. If the configured page is inaccessible, report the access problem
+instead of silently changing destinations.
+When it is `notion`, follow `docs/notion-workflow.md`: use the official Notion MCP
+connection and the OpenPM hub; local-vault paths, wikilinks, and file-index rules
+below apply only to Obsidian. Preserve the content, evidence, section, interview,
+and versioning requirements. Store metadata as page properties or a table. Use
+Notion page links, search before creating, read before editing, and read back saved
+pages. Without an authenticated Notion connection, preserve the draft and report
+publication pending. Extraction produces local staging files for the agent to
+publish through Notion; it does not upload automatically.
+
+
 # Product Documentation
 
 Create or edit one English product documentation hub for a product, platform, or major capability. Use this skill when the user asks for product documentation, a product hub, a product overview, a documentation map, or a living product record. Do not use it to replace a feature PRD/PRDD, a technical design document, an API reference, a runbook, or end-user instructions.

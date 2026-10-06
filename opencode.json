@@ -26,20 +26,20 @@
       "template": "Follow instructions in .opencode/command/daily-standup.md to generate the daily standup report. Arguments: $ARGUMENTS"
     },
     "create-prdd": {
-      "description": "Creates one English nine-section PRDD in Obsidian from source evidence and focused questions.",
-      "template": "Follow instructions in .opencode/command/create-prdd.md to inspect sources, ask focused questions, and generate one English PRDD. Arguments: $ARGUMENTS"
+      "description": "Creates one English nine-section PRDD in Notion or Obsidian from source evidence and focused questions.",
+      "template": "Read docs/notion-workflow.md when DOCUMENTS_PROVIDER=notion. Follow instructions in .opencode/command/create-prdd.md to inspect sources, ask focused questions, and generate one English PRDD. Arguments: $ARGUMENTS"
     },
     "brainstorm": {
       "description": "Runs a topic-agnostic brainstorming interview and exports one collision-safe Markdown file. Usage: /brainstorm [topic] [--quick|--deep] [--out <directory>]",
-      "template": "Follow instructions in .opencode/command/brainstorm.md to conduct the brainstorming interview and export one Markdown file. Arguments: $ARGUMENTS"
+      "template": "Read docs/notion-workflow.md when DOCUMENTS_PROVIDER=notion. Follow instructions in .opencode/command/brainstorm.md to conduct the brainstorming interview and export one Markdown file. Arguments: $ARGUMENTS"
     },
     "edit-prdd": {
-      "description": "Edits/updates an existing Product Requirements & Design Document (PRDD) in your Obsidian vault (`PRDD - <Name> (EN).md`). Usage: /edit-prdd [product-name]",
-      "template": "Follow instructions in .opencode/command/edit-prdd.md to locate and update the English PRDD from source evidence. Arguments: $ARGUMENTS"
+      "description": "Edits/updates an existing Product Requirements & Design Document (PRDD) in your configured document workspace (`PRDD - <Name> (EN).md`). Usage: /edit-prdd [product-name]",
+      "template": "Read docs/notion-workflow.md when DOCUMENTS_PROVIDER=notion. Follow instructions in .opencode/command/edit-prdd.md to locate and update the English PRDD from source evidence. Arguments: $ARGUMENTS"
     },
     "extract-knowledge": {
-      "description": "Extract document files (.docx, .pdf, .pptx, .xlsx, .md, .csv) into AI-friendly knowledge markdown in Obsidian vault. Usage: /extract-knowledge <file-or-folder> [--llm] [--out <dir>] [--overwrite] [--vault <path>] [--json]",
-      "template": "Follow instructions in .opencode/command/extract-knowledge.md to extract knowledge files. Arguments: $ARGUMENTS"
+      "description": "Extract document files (.docx, .pdf, .pptx, .xlsx, .md, .csv) into AI-friendly knowledge markdown in Notion or Obsidian vault. Usage: /extract-knowledge <file-or-folder> [--llm] [--out <dir>] [--overwrite] [--vault <path>] [--json]",
+      "template": "Read docs/notion-workflow.md when DOCUMENTS_PROVIDER=notion. Follow instructions in .opencode/command/extract-knowledge.md to extract knowledge files. Arguments: $ARGUMENTS"
     }
   }
 }
