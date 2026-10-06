@@ -15,7 +15,7 @@ test('brainstorm contracts keep quick and standard/deep mode semantics aligned',
   assert.match(skill, /`--quick` uses at most 6 turns and may produce fewer than 8 ideas/);
   assert.match(skill, /Standard mode and `--deep` use[\s\S]*require at least 8 distinct ideas/);
   assert.match(command, /`--quick` uses at most 6 turns and may produce fewer than 8 ideas/);
-  assert.match(command, /Standard mode and\n`--deep` use at most 10 turns and require at least 8 distinct ideas/);
+  assert.match(command, /Standard mode and\r?\n`--deep` use at most 10 turns and require at least 8 distinct ideas/);
 });
 
 test('OpenCode prompt is self-contained about guide-only output and document safety', () => {

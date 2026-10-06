@@ -1,5 +1,6 @@
 #!/usr/bin/env npx tsx
 import 'dotenv/config';
+import { usesNotion, notionPrddGuide } from '../src/documents/notion.ts';
 import { runFromEnv as runCreateTicket } from '../src/create-ticket/index.ts';
 import { runFromEnv as runEditTicket } from '../src/edit-ticket/index.ts';
 import { runFromEnv as runReleaseWorkflow } from '../src/release-workflow/index.ts';
@@ -55,7 +56,7 @@ Commands:
     Generate a markdown daily standup report from Jira activities.
 
   create-prdd [productName]
-    Print guidelines for creating an English-only PRDD (Obsidian Vault).
+    Print guidelines for creating an English-only PRDD (configured Notion or Obsidian workspace).
 
   brainstorm [topic] [options]
     Print the interactive brainstorming workflow guide (agent-generated Markdown).
@@ -64,7 +65,7 @@ Commands:
     --out <directory>             Suggested Markdown output directory
 
   edit-prdd [productName]
-    Print guidelines for editing an English-only PRDD (Obsidian Vault).
+    Print guidelines for editing an English-only PRDD (configured Notion or Obsidian workspace).
 
   extract-knowledge <file-or-folder> [options]
     Convert document files into structured AI-friendly knowledge .md files.
@@ -275,6 +276,10 @@ async function main() {
 
       case 'create-prdd': {
         const prodName = positional[0] || (flags.name as string) || 'Product';
+        if (usesNotion()) {
+          console.log(JSON.stringify(notionPrddGuide(prodName), null, 2));
+          break;
+        }
         const vaultPath = process.env.OBSIDIAN_VAULT_PATH || process.env.OBSIDIAN_VAULT || 'Dynamic (OBSIDIAN_VAULT_PATH env / user home / user prompt)';
         const guide = {
           command: 'create-prdd',
@@ -365,6 +370,10 @@ async function main() {
 
       case 'edit-prdd': {
         const prodName = positional[0] || (flags.name as string) || 'Product';
+        if (usesNotion()) {
+          console.log(JSON.stringify(notionPrddGuide(prodName, 'edit'), null, 2));
+          break;
+        }
         const vaultPath = process.env.OBSIDIAN_VAULT_PATH || process.env.OBSIDIAN_VAULT || 'Dynamic (OBSIDIAN_VAULT_PATH env / user home / user prompt)';
         const guide = {
           command: 'edit-prdd',

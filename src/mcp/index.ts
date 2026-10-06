@@ -1,5 +1,6 @@
 #!/usr/bin/env npx tsx
 import 'dotenv/config';
+import { usesNotion, notionPrddGuide } from '../documents/notion.ts';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
@@ -129,7 +130,7 @@ const tools: Tool[] = [
   },
   {
     "name": "create_prdd",
-    "description": "Get guidelines and section definitions to generate a 9-section English-only PRDD for Obsidian",
+    "description": "Get guidelines for a 9-section English-only PRDD in the configured document workspace (Notion or Obsidian); this tool does not publish documents",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -292,6 +293,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'create_prdd': {
         const prodName = toolArgs.productName ? String(toolArgs.productName) : 'Product';
+        if (usesNotion()) {
+          return { content: [{ type: 'text', text: JSON.stringify(notionPrddGuide(prodName), null, 2) }] };
+        }
         const vaultPath = process.env.OBSIDIAN_VAULT_PATH || process.env.OBSIDIAN_VAULT || 'Dynamic (OBSIDIAN_VAULT_PATH env / user home / user prompt)';
         return {
           content: [

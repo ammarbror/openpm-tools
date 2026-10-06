@@ -3,6 +3,23 @@ name: brainstorm
 description: Runs a topic-agnostic, bounded brainstorming interview and exports one Markdown document.
 ---
 
+## Document destination
+
+Check `DOCUMENTS_PROVIDER` in the repository configuration before choosing storage.
+Use the configured provider and `NOTION_ROOT_PAGE_URL` automatically; do not ask
+the user to select storage again. An explicit user destination overrides this
+default. If the configured page is inaccessible, report the access problem
+instead of silently changing destinations.
+When it is `notion`, follow `docs/notion-workflow.md`: use the official Notion MCP
+connection and the OpenPM hub; local-vault paths, wikilinks, and file-index rules
+below apply only to Obsidian. Preserve the content, evidence, section, interview,
+and versioning requirements. Store metadata as page properties or a table. Use
+Notion page links, search before creating, read before editing, and read back saved
+pages. Without an authenticated Notion connection, preserve the draft and report
+publication pending. Extraction produces local staging files for the agent to
+publish through Notion; it does not upload automatically.
+
+
 # Brainstorm Skill
 
 Run an interactive brainstorming session for any topic: product ideas, personal decisions,
