@@ -107,7 +107,7 @@ repository is opened as the Codex workspace.
 Verify the MCP connection, guide output, and local document extraction without
 external credentials using `node scripts/smoke-mcp.mjs`.
 
-The CLI and MCP server share the same `.env` configuration. PRDD CLI commands and `create_prdd` return guides; the agent reads sources, asks focused questions, and writes the document. `technical-docs`, `product-documentation`, and `product-technical-specification` are Codex skills only, with no CLI command or MCP tool.
+The CLI and MCP server share the same `.env` configuration. PRDD CLI commands and `create_prdd` return guides; the agent reads sources, asks focused questions, and writes the document. `technical-docs`, `product-documentation`, and `product-technical-specification` are agent workflows with no CLI command or MCP tool. Their canonical skills live under `.codex/skills/` and are also used by the Hermes bridge.
 
 Jira descriptions support Markdown fenced code blocks and Jira wiki `{code:language}` blocks. Creating or editing a description with a `mermaid` block renders an SVG, uploads it as an issue attachment, and adds an inline media reference beside the retained source. Jira credentials need attachment-upload permission, and attachments must be enabled.
 
@@ -165,22 +165,29 @@ This repo contains pre-packaged skills in `.claude/skills/`:
 - `.claude/skills/extract-knowledge`
 
 ### 4. Hermes-Agent
-Hermes-Agent can use `openpm-tools` via MCP or CLI tool calls.
+Hermes uses the native `/openpm-tools` project skill and the same stdio MCP server.
+The skill routes all 13 workflows to their shared instructions, including concise
+writing and diagram guidance.
 
-**Via MCP (`~/.hermes/mcp.json` or agent config):**
-```json
-{
-  "mcpServers": {
-    "openpm-tools": {
-      "command": "npx",
-      "args": ["tsx", "/path/to/openpm-tools/src/mcp/index.ts"]
-    }
-  }
-}
+From this repository, print the configuration for the current checkout:
+
+```bash
+node scripts/hermes-config.mjs --with-notion
 ```
 
-**Via CLI:**
-Instruct Hermes to run `npx openpm-tools <command> [options]`.
+Merge the generated `mcp_servers` entries into the active Hermes profile's
+`config.yaml`; preserve its existing settings. The generator prints paths, never
+credentials, and does not modify the profile. Authorize Notion separately if used.
+
+```bash
+hermes mcp login notion
+hermes skills trust
+hermes chat
+```
+
+Then try `/openpm-tools create-prdd <product-name>`. Run
+`node scripts/smoke-mcp.mjs --hermes` for the local configuration check. For setup,
+workflow examples, and reload instructions, see [Hermes Agent setup](docs/hermes-agent.md).
 
 ### 5. OpenClaw
 Add `openpm-tools` to your OpenClaw tool definition using stdio MCP:
@@ -450,6 +457,7 @@ openpm-tools/
 │   └── review-pr/
 ├── .claude/skills/          # Claude Code skill manifests
 ├── .codex/skills/           # Codex skills, including technical-docs and product-documentation
+├── .hermes/skills/          # Hermes bridge to the canonical workflow skills
 ├── AGENTS.md                 # Codex/repository working guidance
 ├── .opencode/command/       # OpenCode command definitions (brainstorm.md, create-prdd.md)
 └── opencode.json            # OpenCode command registrations

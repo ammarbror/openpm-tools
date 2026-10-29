@@ -5,12 +5,17 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { createHermesConfig } from './hermes-config.mjs';
 
 const scratch = await fs.mkdtemp(path.join(os.tmpdir(), 'openpm-smoke-'));
 const client = new Client({ name: 'openpm-setup-check', version: '1.0.0' });
-const transport = new StdioClientTransport({
+const hermes = process.argv.includes('--hermes');
+const server = hermes ? createHermesConfig().mcp_servers['openpm-tools'] : {
   command: process.execPath,
   args: [fileURLToPath(new URL('./start-mcp.mjs', import.meta.url))],
+};
+const transport = new StdioClientTransport({
+  ...server,
   cwd: scratch,
   stderr: 'pipe',
 });
@@ -29,7 +34,7 @@ try {
   const extraction = await client.callTool({ name: 'extract_knowledge', arguments: { source, out, json: true } });
   assert.ok(!extraction.isError);
   assert.match(await fs.readFile(path.join(out, 'sample.knowledge.md'), 'utf8'), /Document extraction works locally/);
-  console.log(JSON.stringify({ status: 'passed', tools: tools.map(tool => tool.name), checks: ['MCP initialization from another folder', 'tool discovery', 'PRDD guide', 'document extraction'] }, null, 2));
+  console.log(JSON.stringify({ status: 'passed', configuration: hermes ? 'Hermes config generator' : 'direct stdio', tools: tools.map(tool => tool.name), checks: ['MCP initialization from another folder', 'tool discovery', 'PRDD guide', 'document extraction'] }, null, 2));
 } finally {
   await client.close();
   await transport.close();

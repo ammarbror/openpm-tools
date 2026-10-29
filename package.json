@@ -8,6 +8,7 @@
   "scripts": {
     "mcp": "node scripts/start-mcp.mjs",
     "cli": "tsx bin/openpm-tools.ts",
+    "hermes:config": "node scripts/hermes-config.mjs",
     "test": "npx tsx --test src/**/*.test.ts"
   },
   "dependencies": {
