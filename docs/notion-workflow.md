@@ -7,8 +7,9 @@ The CLI and `create_prdd` return guides. An agent uses Notion tools to save docu
 
 ## OpenPM hub
 
-Use Notion automatically when selected in `.env`; do not ask the user to choose
+Use Notion automatically by default or when selected in `.env`; do not ask the user to choose
 the document destination again. Fetch and use `NOTION_ROOT_PAGE_URL` when configured.
+Set `DOCUMENTS_PROVIDER=obsidian` only when local Obsidian storage is explicitly requested.
 An explicit destination in the user's request overrides this default. If the
 configured page is inaccessible, report the access problem and preserve the draft;
 do not silently switch to local storage or create a replacement hub.
@@ -18,14 +19,18 @@ hub only when the user requests one; search first to avoid a duplicate, then cre
 it in the authorized workspace. Do not create unrelated pages or import existing
 documents without a migration request.
 
-Organize its child pages into Projects, PRDDs, Technical Documentation, Knowledge,
-and Handoffs. Create these categories as needed. Product documentation hubs link
+Organize its child pages into Projects, PRDDs, Technical Documentation,
+Product & Technical Specifications, Knowledge, and Handoffs. Create these categories as needed. Product documentation hubs link
 canonical documents and Jira/Bitbucket URLs instead of duplicating their content.
 Use normal Notion page links; replace local-vault paths and Obsidian wikilinks.
 
 ## Create and edit documents
 
 Follow the existing skill's content, evidence, section, and versioning requirements.
+Apply [Clear, concise, detailed documents](document-writing.md): lead with the main
+point, remove repetition, and retain actionable rules, contracts, exceptions, and evidence.
+Apply [Diagrams in generated documents](document-diagrams.md) for visual coverage,
+readability, and validation; preserve Mermaid source and text summaries on read-back.
 Its local-file storage instructions apply only to the Obsidian provider. In Notion:
 
 - Drop the `.md` extension from the page title. Keep English-only document titles.

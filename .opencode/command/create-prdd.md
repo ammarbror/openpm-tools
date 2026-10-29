@@ -2,9 +2,18 @@
 description: Create an English nine-section Product Requirements & Design Document in the configured Notion or Obsidian workspace from source evidence and focused questions.
 ---
 
+## Writing guidance
+
+Follow [Clear, concise, detailed documents](../../docs/document-writing.md). State the main point first, remove repetition, and retain the detail needed to decide, implement, test, or operate. Lead with the problem and intended outcome. Keep requirements testable, with explicit business rules and important exceptions; put exact API/schema detail in its canonical section and cross-reference it.
+
+## Diagram guidance
+
+Read [Diagrams in generated documents](../../docs/document-diagrams.md) before drafting. Include context and user-journey diagrams alongside architecture, ERD, and critical integration sequences; add rule, state, and recovery views where supported.
+
 ## Document destination
 
 Check `DOCUMENTS_PROVIDER` in the repository configuration before choosing storage.
+If it is unset or blank, default to Notion; set it to `obsidian` only when local Obsidian storage is explicitly requested.
 Use the configured provider and `NOTION_ROOT_PAGE_URL` automatically; do not ask
 the user to select storage again. An explicit user destination overrides this
 default. If the configured page is inaccessible, report the access problem

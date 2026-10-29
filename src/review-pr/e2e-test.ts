@@ -36,9 +36,10 @@ const SAMPLE_URL = 'https://bitbucket.org/kartiniotomasi/core-api-v2/pull-reques
 
 const prJson = {
   title: 'KAIRA-123 Fix authentication vulnerability',
-  description: 'KAIRA-456 tracking issue for auth rewrite',
-  rendered: { description: '<p>KAIRA-456 tracking issue for auth rewrite</p>' },
-  source: { branch: { name: 'feature/KAIRA-123-fix-auth' } },
+  description: 'https://jira.example.com/browse/KAIRA-456 tracking issue for auth rewrite',
+  rendered: { description: '<p>https://jira.example.com/browse/KAIRA-456 tracking issue for auth rewrite</p>' },
+  source: { branch: { name: 'feature/KAIRA-123-fix-auth' }, commit: { hash: 'a'.repeat(40) } },
+  destination: { commit: { hash: 'b'.repeat(40) } },
 };
 
 const commitsJson = {
@@ -203,7 +204,7 @@ void describe('End-to-end: fetchReviewData → postBitbucketComments → postJir
       reviewData.metadata.title,
       'KAIRA-123 Fix authentication vulnerability',
     );
-    assert.strictEqual(reviewData.metadata.description, '<p>KAIRA-456 tracking issue for auth rewrite</p>');
+    assert.strictEqual(reviewData.metadata.description, '<p>https://jira.example.com/browse/KAIRA-456 tracking issue for auth rewrite</p>');
     assert.strictEqual(reviewData.metadata.sourceBranch, 'feature/KAIRA-123-fix-auth');
 
     // diff
@@ -239,12 +240,12 @@ void describe('End-to-end: fetchReviewData → postBitbucketComments → postJir
     );
 
     // Verify API call count for fetchReviewData phase
-    // Expected: 1 PR info GET + 1 commits GET + 1 diff GET = 3 calls
+    // Read heads before and after the diff to detect a moving PR.
     const fetchDataPhaseCalls = callLog.length;
     assert.strictEqual(
       fetchDataPhaseCalls,
-      3,
-      `fetchReviewData should make exactly 3 API calls (got ${fetchDataPhaseCalls})`,
+      5,
+      `fetchReviewData should make exactly 5 API calls (got ${fetchDataPhaseCalls})`,
     );
 
     // ===================================================================

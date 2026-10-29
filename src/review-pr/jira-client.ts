@@ -128,6 +128,34 @@ export async function addIssueCommentADF(
   });
 }
 
+export async function upsertReviewIssueComment(
+  issueKey: string,
+  config: JiraConfig,
+  prUrl: string,
+  doc: Record<string, unknown>,
+): Promise<void> {
+  const identity = await jiraFetch<{ accountId: string }>(`${config.baseUrl}/rest/api/3/myself`, config);
+  if (!identity.accountId) throw new Error('Cannot identify Jira comment author');
+  const marker = `openpm-review:${prUrl}`;
+  const base = `${config.baseUrl}/rest/api/3/issue/${issueKey}/comment`;
+  let startAt = 0;
+  let existing: string | undefined;
+  while (true) {
+    const page = await jiraFetch<{ comments: any[]; total: number }>(`${base}?startAt=${startAt}`, config);
+    if (!Array.isArray(page.comments)) throw new Error('Invalid Jira comments response');
+    existing = page.comments.find(c => c.author?.accountId === identity.accountId && c.body?.content?.at(-1)?.content?.[0]?.text === marker)?.id;
+    startAt += page.comments.length;
+    if (existing || startAt >= page.total || page.comments.length === 0) break;
+  }
+  const body = { ...doc, content: [
+    ...(doc.content as unknown[]),
+    { type: 'paragraph', content: [{ type: 'text', text: marker }] },
+  ] };
+  await jiraFetch(existing ? `${base}/${existing}` : base, config, {
+    method: existing ? 'PUT' : 'POST', body: JSON.stringify({ body }),
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Issue creation
 // ---------------------------------------------------------------------------

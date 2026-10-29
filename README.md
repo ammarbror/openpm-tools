@@ -1,6 +1,6 @@
 # openpm-tools
 
-AI Product Manager (PM) toolkit for Jira & Bitbucket: create Jira tickets, generate English PRDDs in Obsidian, generate sprint reports, manage release notes, update tickets, and run automated PR reviews — natively integrated with **Codex**, **OpenCode**, **Claude Code**, **Hermes-Agent**, **OpenClaw**, and **Antigravity** (via MCP Server & CLI).
+AI Product Manager (PM) toolkit for Jira & Bitbucket: create Jira tickets, generate English PRDDs in the configured Notion or Obsidian workspace, generate sprint reports, manage release notes, update tickets, and run automated PR reviews — natively integrated with **Codex**, **OpenCode**, **Claude Code**, **Hermes-Agent**, **OpenClaw**, and **Antigravity** (via MCP Server & CLI).
 
 ---
 
@@ -8,16 +8,17 @@ AI Product Manager (PM) toolkit for Jira & Bitbucket: create Jira tickets, gener
 
 - **`/review-pr` / `fetch_pr_review` & `post_pr_review`** — Fetches PR diffs from Bitbucket, generates structured review prompts, performs PR hygiene alerts (missing description / linked Jira tickets), posts inline + summary findings to Bitbucket, and cross-references linked Jira issues with actionable next steps.
 - **`/daily-standup` / `daily_standup`** — Generates real-time Daily Standup Reports in Markdown format from Jira activities (Yesterday's Progress, Today's Focus, Risks & Blockers).
-- **`/create-ticket` / `create_ticket`** — Creates a Jira ticket assigned to the active sprint with auto-structured templates (Task, Bug, Story, Epic, Story Points, Assignee).
-- **`/create-prdd` / `create_prdd`** — Uses source evidence and focused questions to generate an English Product Requirements & Design Document (`PRDD - <Name> (EN).md`) in your Obsidian vault.
+- **`/create-ticket` / `create_ticket`** — Creates a Jira ticket with a clear description and a context-based story point estimate. Uses the active sprint, first future sprint, or backlog; Epics stay outside sprints.
+- **`/create-prdd` / `create_prdd`** — Uses source evidence and focused questions to generate an English Product Requirements & Design Document (`PRDD - <Name> (EN).md`) in your configured Notion or Obsidian workspace.
 - **`/brainstorm`** — Runs a topic-agnostic, one-question-per-turn brainstorming interview and exports one structured Markdown document with explicit success criteria and optional Mermaid diagrams.
-- **`/edit-prdd`** — Updates/edits the English Product Requirements & Design Document (PRDD) in your Obsidian vault.
+- **`/edit-prdd`** — Updates/edits the English Product Requirements & Design Document (PRDD) in your configured Notion or Obsidian workspace.
 - **`product-documentation`** — Creates and maintains an English product hub linking requirements, technical designs, delivery, operations, and user documentation.
-- **`technical-docs`** — Creates and edits English technical documentation with a fixed 10-section system-documentation structure in your Obsidian vault.
+- **`technical-docs`** — Creates and edits English technical documentation with a fixed 10-section system-documentation structure in your configured Notion or Obsidian workspace.
+- **`product-technical-specification`** — Creates, edits, or combines product requirements and technical design in one English specification with UX, architecture, API contracts, ERD, and requirement-to-test traceability.
 - **`/edit-ticket` / `edit_ticket`** — Updates summary, description, or assignee on existing Jira tickets.
 - **`/release-workflow` / `release_workflow`** — Creates Jira release versions for Ready for Release tickets and generates markdown release notes.
 - **`/sprint-report` / `sprint_report`** — Generates complete sprint health reports with burndown metrics, assignee distribution, and HTML export.
-- **`/extract-knowledge` / `extract_knowledge`** — Converts document files (`.md`, `.pdf`, `.docx`, `.pptx`, `.xlsx`, `.odt`, `.csv`, etc.) into structured, AI-friendly knowledge Markdown files in an Obsidian vault (`<VAULT>/00 Knowledge/`), optionally enhanced by an LLM.
+- **`/extract-knowledge` / `extract_knowledge`** — Converts document files (`.md`, `.pdf`, `.docx`, `.pptx`, `.xlsx`, `.odt`, `.csv`, etc.) into structured, AI-friendly knowledge Markdown for the configured Notion or Obsidian workspace, optionally enhanced by an LLM.
 
 ---
 
@@ -25,7 +26,8 @@ AI Product Manager (PM) toolkit for Jira & Bitbucket: create Jira tickets, gener
 
 ### Use Notion across devices
 
-Set `DOCUMENTS_PROVIDER=notion` in `.env`. Connect the official Notion MCP server
+Notion is the default document provider. You can set `DOCUMENTS_PROVIDER=notion` in
+`.env` explicitly, or set `DOCUMENTS_PROVIDER=obsidian` to opt into Obsidian. Connect the official Notion MCP server
 alongside openpm-tools:
 
 ```powershell
@@ -49,7 +51,7 @@ need their own Notion connection and local toolkit setup, but share cloud docume
   - **Bitbucket API token** ([App Passwords](https://bitbucket.org/account/settings/app-passwords/))
   - **Jira API token** ([API Tokens](https://id.atlassian.com/manage-profile/security/api-tokens))
   - Jira URL & Project Key
-- Obsidian Vault (for `/create-prdd`)
+- Obsidian Vault only when `DOCUMENTS_PROVIDER=obsidian`
 
 ### Setup
 
@@ -80,7 +82,7 @@ Codex can use this repository in two ways:
 
 ```bash
 # Direct CLI
-npx openpm-tools create-ticket "Fix payment gateway timeout" --type bug
+npx openpm-tools create-ticket "Fix payment gateway timeout" --type bug --story-points 3
 
 # Local development commands
 npm run cli -- sprint-report --export-html
@@ -105,7 +107,7 @@ repository is opened as the Codex workspace.
 Verify the MCP connection, guide output, and local document extraction without
 external credentials using `node scripts/smoke-mcp.mjs`.
 
-The CLI and MCP server share the same `.env` configuration. PRDD CLI commands and `create_prdd` return guides; the agent reads sources, asks focused questions, and writes the document. `technical-docs` and `product-documentation` are Codex skills only, with no CLI command or MCP tool.
+The CLI and MCP server share the same `.env` configuration. PRDD CLI commands and `create_prdd` return guides; the agent reads sources, asks focused questions, and writes the document. `technical-docs`, `product-documentation`, and `product-technical-specification` are Codex skills only, with no CLI command or MCP tool.
 
 Jira descriptions support Markdown fenced code blocks and Jira wiki `{code:language}` blocks. Creating or editing a description with a `mermaid` block renders an SVG, uploads it as an issue attachment, and adds an inline media reference beside the retained source. Jira credentials need attachment-upload permission, and attachments must be enabled.
 
@@ -245,6 +247,12 @@ Both agent tiers share the same `.env` credentials and `openpm-tools` core engin
 
 You can also run any command directly from terminal:
 
+Ticket creation requires `--story-points` (or `storyPoints` through MCP). Agents recommend an estimate from scope and uncertainty, preserve explicit user estimates, and explain their rationale in the description. The CLI validates the estimate rather than silently assigning 0. Direct callers must supply their own estimate.
+
+Supplied descriptions are saved without inferred requirements or extra template sections. Agents should include the objective, scope, testable acceptance criteria, known contracts/examples, and explicit unknowns. Omitted descriptions produce an editable skeleton.
+
+Assignee names must uniquely match a Jira display name; use `--assignee-id` when needed. An explicit sprint must exist on the selected board. If creation succeeds but sprint assignment or diagram enrichment fails, inspect the issue key in the error and repair that issue before retrying to avoid duplicates. A timeout can also leave the outcome uncertain; inspect Jira before retrying.
+
 ```bash
 # Create Jira ticket
 npx openpm-tools create-ticket "Fix payment gateway timeout" --type bug --sprint "Sprint 12" --story-points 3
@@ -267,7 +275,7 @@ npx openpm-tools edit-ticket KAIRA-123 --summary "Updated summary" --assignee "A
 # Run release workflow
 npx openpm-tools release-workflow --version-name "v1.5.0"
 
-# Extract knowledge from a file or folder into Obsidian vault
+# Extract knowledge from a file or folder into the configured document workspace
 npx openpm-tools extract-knowledge ./document.docx --llm --overwrite
 
 # Generate sprint report
@@ -276,9 +284,18 @@ npx openpm-tools sprint-report --export-html
 # Fetch PR diff for LLM review
 npx openpm-tools fetch-pr-review "https://bitbucket.org/myworkspace/myrepo/pull-requests/42" --json
 
-# Post PR review findings
-npx openpm-tools post-pr-review "https://bitbucket.org/myworkspace/myrepo/pull-requests/42" findings.json
+# Publish a review object containing the fetched snapshot, status, limitations, and findings
+npx openpm-tools post-pr-review "https://bitbucket.org/myworkspace/myrepo/pull-requests/42" review.json --json
 ```
+
+Review publication requires `{ snapshot: { sourceCommit, destinationCommit, diffHash },
+status: "complete" | "incomplete", limitations: string[], findings: [...] }`.
+Copy `snapshot` from `fetch-pr-review`; stale snapshots and legacy bare arrays are rejected.
+Incomplete reviews require a reason and never produce `NO ISSUES FOUND`.
+Review comments are updated for the authenticated author; Jira statuses are not changed.
+Jira targets come from the PR title, source branch, and explicit `/browse/KEY` links in its description, not incidental mentions or commit messages.
+Check all publication results: partial Bitbucket/inline/Jira failures produce a nonzero CLI exit code.
+MCP `post_pr_review` uses the same object in its required `review` argument.
 
 ---
 
@@ -302,7 +319,7 @@ npx openpm-tools daily-standup [assigneeName] [--json]
 
 ### `edit-prdd` Command & Skill
 
-Edit an existing English Product Requirements & Design Document (PRDD) in your Obsidian vault (`<VAULT>/01 Projects/PRDs/<Project>/`).
+Edit an existing English Product Requirements & Design Document (PRDD) in the configured Notion or Obsidian workspace.
 
 **CLI Usage:**
 ```bash
@@ -320,7 +337,7 @@ npx openpm-tools edit-prdd [product-name] [--json]
 
 ### `create-prdd` Command & Skill
 
-Inspect source evidence and ask focused questions to generate one English nine-section PRDD (`PRDD - <Name> (EN).md`) under `<VAULT>/01 Projects/PRDs/<Project>/` and update the `Daftar PRDD.md` index.
+Inspect source evidence and ask focused questions to generate one English nine-section PRDD (`PRDD - <Name> (EN).md`) in the configured Notion or Obsidian workspace.
 
 **CLI Usage:**
 ```bash
@@ -329,6 +346,10 @@ npx openpm-tools create-prdd [product-name] [--json]
 
 **Codex / OpenCode / Claude Code:**
 - `/create-prdd [product-name]`
+
+Document-writing skills follow [Clear, concise, detailed documents](docs/document-writing.md): lead with the main point, remove repetition, and retain the rules, contracts, exceptions, and evidence readers need to act. Put detailed reference material in its canonical section and link to it elsewhere.
+
+Document-writing skills follow [Diagrams in generated documents](docs/document-diagrams.md): start substantial documents with a visual overview, then explain important journeys, decisions, integrations, data relationships, and recovery paths with focused Mermaid diagrams. Each diagram includes a text explanation, source/status context, and syntax validation. Coverage scales to the document and available evidence; narrow edits preserve unrelated content.
 
 PRDD requirements keep MoSCoW scope (`Must`, `Should`, `Could`, `Won't`) separate from release priority (`P0`, `P1`, `P2`). Creation preserves an existing file; edits update affected cross-references and version history. Keep exact schema and API identifiers, label unsupported facts `TBD` or `Unverified`, and validate Mermaid diagrams with an available parser or renderer.
 
@@ -353,6 +374,19 @@ Use the Codex skill for system, architecture, or technical design documentation:
 - Required structure: 10 English sections covering architecture, security, data model, stack, and UI navigation
 - The skill updates `Daftar Technical Documentation.md`, preserves technical identifiers, validates Mermaid structure, and records version history after edits.
 
+### `product-technical-specification` Skill
+
+Use `$product-technical-specification` to create or edit a combined Product & Technical Specification, or convert existing PRDDs and technical designs into one document.
+
+- Skill instructions: `.codex/skills/product-technical-specification/SKILL.md`
+- Default destination: the configured Notion root's `Product & Technical Specifications` category
+- Obsidian folder: `<VAULT>/01 Projects/Product & Technical Specifications/`
+- Title: `Product & Technical Specification - <Name>` (add `.md` for Obsidian)
+- Structure: twelve sections covering product context, outcomes, UX, requirements, architecture, data model, contracts, security, reliability, testing, release/operations, and decisions
+- Conversion preserves source documents, identifies conflicting evidence, and connects requirements to implementation and tests. The skill verifies saved Mermaid code blocks and maintains document history and index membership.
+
+Example: `Use $product-technical-specification to combine the KAWAN PRDD and technical documentation into one specification.`
+
 ### `brainstorm` Command & Skill
 
 Run `/brainstorm [topic]` in an AI agent for a bounded, topic-agnostic interview. The agent asks one
@@ -363,8 +397,8 @@ prioritization and include at least eight ideas unless fewer are requested. Miss
 marked `TBD` or `N/A`. The exported document includes explicit success criteria, and ideas are not
 presented as research or professional advice.
 
-Mermaid is optional: it is included only when a simple diagram materially clarifies relationships,
-stages, dependencies, or choices, with a prose explanation alongside it. Simple topics remain
+For topics with meaningful relationships, include a theme/cluster map and a decision or next-action
+flow with prose explanations, following the shared diagram guide. Simple topics may remain
 diagram-free. The standalone CLI is guide-only and does not conduct the interview or write the file:
 
 ```bash

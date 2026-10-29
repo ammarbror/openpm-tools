@@ -9,6 +9,22 @@ export interface PRMetadata {
   description: string;
   sourceBranch: string;
   commitMessages: string[];
+  sourceCommit?: string;
+  destinationCommit?: string;
+  qualityWarnings?: string[];
+}
+
+export interface ReviewSnapshot {
+  sourceCommit: string;
+  destinationCommit: string;
+  diffHash: string;
+}
+
+export interface ReviewSubmission {
+  snapshot: ReviewSnapshot;
+  status: 'complete' | 'incomplete';
+  limitations: string[];
+  findings: ReviewFinding[];
 }
 
 export interface ReviewFinding {

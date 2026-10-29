@@ -3,9 +3,18 @@ name: technical-docs
 description: Create or edit English technical documentation in the configured Notion or Obsidian workspace using a fixed ten-section system-documentation structure.
 ---
 
+## Writing guidance
+
+Follow [Clear, concise, detailed documents](../../../docs/document-writing.md). State the main point first, remove repetition, and retain the detail needed to decide, implement, test, or operate. Explain system purpose and boundaries first, then responsibilities, interactions, contracts, and failure handling. Keep exact technical detail in the relevant section or appendix and reference it elsewhere.
+
+## Diagram guidance
+
+Read [Diagrams in generated documents](../../../docs/document-diagrams.md) before drafting. Cover architecture, module dependencies, ERD, and relevant access, navigation, integration, and recovery flows using focused diagrams.
+
 ## Document destination
 
 Check `DOCUMENTS_PROVIDER` in the repository configuration before choosing storage.
+If it is unset or blank, default to Notion; set it to `obsidian` only when local Obsidian storage is explicitly requested.
 Use the configured provider and `NOTION_ROOT_PAGE_URL` automatically; do not ask
 the user to select storage again. An explicit user destination overrides this
 default. If the configured page is inaccessible, report the access problem

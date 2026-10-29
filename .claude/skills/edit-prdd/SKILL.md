@@ -3,9 +3,18 @@ name: edit-prdd
 description: Edit an English-only nine-section PRDD file in the configured Notion or Obsidian workspace.
 ---
 
+## Writing guidance
+
+Follow [Clear, concise, detailed documents](../../../docs/document-writing.md). State the main point first, remove repetition, and retain the detail needed to decide, implement, test, or operate. Keep edits focused. Tighten changed prose without losing requirements, decisions, contracts, evidence, or exceptions; update directly affected references only.
+
+## Diagram guidance
+
+Read [Diagrams in generated documents](../../../docs/document-diagrams.md) before drafting. Update diagrams for the requested change and reconcile affected views; preserve unrelated content and supplied Mermaid outside that scope.
+
 ## Document destination
 
 Check `DOCUMENTS_PROVIDER` in the repository configuration before choosing storage.
+If it is unset or blank, default to Notion; set it to `obsidian` only when local Obsidian storage is explicitly requested.
 Use the configured provider and `NOTION_ROOT_PAGE_URL` automatically; do not ask
 the user to select storage again. An explicit user destination overrides this
 default. If the configured page is inaccessible, report the access problem

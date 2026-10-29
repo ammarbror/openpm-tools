@@ -6,8 +6,9 @@ import test from 'node:test';
 import { usesNotion, notionPrddGuide } from './notion.ts';
 import { extractKnowledgeWorkflow } from '../extract-knowledge/index.ts';
 
-test('Notion selection is explicit and accepts whitespace and casing', () => {
-  assert.equal(usesNotion({}), false);
+test('Notion is the default and accepts explicit provider values', () => {
+  assert.equal(usesNotion({}), true);
+  assert.equal(usesNotion({ DOCUMENTS_PROVIDER: '   ' }), true);
   assert.equal(usesNotion({ DOCUMENTS_PROVIDER: 'obsidian' }), false);
   assert.equal(usesNotion({ DOCUMENTS_PROVIDER: ' NOTION ' }), true);
 });

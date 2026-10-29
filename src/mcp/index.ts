@@ -15,33 +15,27 @@ import { runFromEnv as runReleaseWorkflow } from '../release-workflow/index.ts';
 import { runFromEnv as runSprintReport } from '../sprint-report/index.ts';
 import { runFromEnv as runExtractKnowledge } from '../extract-knowledge/index.ts';
 import { generateStandupReport, formatStandupMarkdown } from '../daily-standup/index.ts';
-import {
-  fetchReviewData,
-  postBitbucketComments,
-  postJiraComments,
-  loadBitbucketConfig,
-  loadJiraConfig,
-} from '../review-pr/index.ts';
-import type { ReviewFinding } from '../review-pr/types.ts';
+import { fetchReviewData } from '../review-pr/index.ts';
+import { publishReview } from '../review-pr/publication.ts';
 
 const tools: Tool[] = [
   {
     name: 'create_ticket',
     description:
-      'Create a Jira ticket in the current active sprint. BEFORE calling, ALWAYS rewrite/improve the summary into a clear, concise, professional title (fix typos/grammar/wording, max ~80 chars, English). If no description is provided, write one yourself from your understanding of the summary; if you have no understanding, fill in the type-specific sections with placeholders plus an explanation of what each section should contain (Task: Description/Technical Details/Definition of Done/Notes; Bug: Description/Steps to Reproduce/Expected/Actual/Environment/Evidence; Story: User Story/Acceptance Criteria/Additional Context; Epic: Epic Description/Goals/Key Initiatives/Out of Scope/Dependencies).',
+      'Create a Jira ticket with an improved summary, a complete description (objective, scope, testable acceptance criteria, known technical details, and explicit open questions), and a context-based storyPoints estimate with rationale in the description. Preserve supplied facts; do not invent contracts or evidence. Supplied descriptions are preserved without inferred sections. Use exact assignee display names or account IDs. Uses the active sprint, otherwise the first future sprint, otherwise backlog; epics stay outside sprints. Missing explicit sprint names or ambiguous assignees fail before creation. On error, inspect any existing issue before retrying creation.',
     inputSchema: {
       type: 'object',
       properties: {
         summary: { type: 'string', description: 'Concise summary of the ticket (improve/rewrite it before passing)' },
-        description: { type: 'string', description: 'Detailed description or criteria; if omitted, derive it from the summary or fill with type-specific section placeholders' },
+        description: { type: 'string', description: 'Complete structured description, including acceptance criteria, known details, open questions, and estimation rationale. Supplied content is preserved.' },
         issueType: { type: 'string', description: 'Issue type: Task, Bug, Story, Feature, Epic' },
         assignee: { type: 'string', description: 'Assignee display name' },
         assigneeAccountId: { type: 'string', description: 'Assignee Jira account ID' },
         sprintName: { type: 'string', description: 'Target sprint name' },
         parentEpicKey: { type: 'string', description: 'Parent Epic key (e.g. KAIRA-100)' },
-        storyPoints: { type: 'number', description: 'Story points estimation' },
+        storyPoints: { type: 'number', minimum: 0, description: 'Required context-based estimate; preserve an explicit user estimate, otherwise recommend using the project scale or provisional Fibonacci 1, 2, 3, 5, 8, 13. Explain the rationale in the description.' },
       },
-      required: ['summary'],
+      required: ['summary', 'storyPoints'],
     },
   },
   {
@@ -103,29 +97,32 @@ const tools: Tool[] = [
   },
   {
     "name": "post_pr_review",
-    "description": "Post structured LLM review findings to Bitbucket PR comments and linked Jira issues",
+    "description": "Publish a snapshot-verified review object to Bitbucket PR comments and explicitly linked Jira issues",
     "inputSchema": {
       "type": "object",
       "properties": {
         "prUrl": { "type": "string", "description": "Full Bitbucket Pull Request URL" },
-        "findings": {
-          "type": "array",
-          "description": "List of review findings (CRITICAL, HIGH, BUG)",
-          "items": {
-            "type": "object",
-            "properties": {
-              "severity": { "type": "string", "enum": ["CRITICAL", "HIGH", "BUG"] },
-              "file": { "type": "string" },
-              "line": { "type": "number" },
-              "title": { "type": "string" },
-              "description": { "type": "string" },
-              "suggestion": { "type": "string" }
-            },
-            "required": ["severity", "file", "title", "description"]
-          }
+        "review": {
+          "type": "object",
+          "description": "Reviewed snapshot from fetch_pr_review, completeness, limitations, and findings",
+          "properties": {
+            "snapshot": { "type": "object", "properties": {
+              "sourceCommit": { "type": "string" }, "destinationCommit": { "type": "string" }, "diffHash": { "type": "string" }
+            }, "required": ["sourceCommit", "destinationCommit", "diffHash"] },
+            "status": { "type": "string", "enum": ["complete", "incomplete"] },
+            "limitations": { "type": "array", "items": { "type": "string" } },
+            "findings": { "type": "array", "items": {
+              "type": "object", "properties": {
+                "severity": { "type": "string", "enum": ["CRITICAL", "HIGH", "BUG"] },
+                "file": { "type": "string" }, "line": { "type": "integer", "minimum": 1 },
+                "message": { "type": "string" }
+              }, "required": ["severity", "file", "message"]
+            } }
+          },
+          "required": ["snapshot", "status", "limitations", "findings"]
         }
       },
-      "required": ["prUrl", "findings"]
+      "required": ["prUrl", "review"]
     }
   },
   {
@@ -140,7 +137,7 @@ const tools: Tool[] = [
   },
   {
     name: 'extract_knowledge',
-    description: 'Extract document files (.docx, .pdf, .pptx, .xlsx, .md, .csv) into AI-friendly knowledge markdown in Obsidian vault',
+    description: 'Extract document files (.docx, .pdf, .pptx, .xlsx, .md, .csv) into AI-friendly knowledge Markdown for the configured Notion or Obsidian workspace; Notion publication is handled separately through its MCP server',
     inputSchema: {
       type: 'object',
       properties: {
@@ -187,7 +184,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           assigneeAccountId: toolArgs.assigneeAccountId ? String(toolArgs.assigneeAccountId) : undefined,
           sprintName: toolArgs.sprintName ? String(toolArgs.sprintName) : undefined,
           parentEpicKey: toolArgs.parentEpicKey ? String(toolArgs.parentEpicKey) : undefined,
-          storyPoints: toolArgs.storyPoints ? Number(toolArgs.storyPoints) : undefined,
+          storyPoints: typeof toolArgs.storyPoints === 'number' ? toolArgs.storyPoints : undefined,
         });
         return {
           content: [{ type: 'text', text: result }],
@@ -237,6 +234,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                   prUrl: reviewData.prUrl,
                   prInfo: reviewData.prInfo,
                   metadata: reviewData.metadata,
+                  snapshot: reviewData.snapshot,
                   jiraKeys: reviewData.jiraKeys,
                   diff: reviewData.diff,
                   reviewPrompt: reviewData.reviewPrompt,
@@ -251,32 +249,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'post_pr_review': {
         const prUrl = String(toolArgs.prUrl);
-        const rawFindings = (toolArgs.findings || []) as any[];
-        const findings: ReviewFinding[] = rawFindings.map((f: any) => ({
-          severity: f.severity || 'BUG',
-          file: f.file || 'unknown',
-          line: f.line != null ? Number(f.line) : undefined,
-          message: f.message || [f.title, f.description, f.suggestion].filter(Boolean).join(' - ') || 'Issue detected',
-        }));
-
-        const bbConfig = loadBitbucketConfig();
-        const jiraConfig = loadJiraConfig();
-        const reviewData = await fetchReviewData(prUrl);
-
-        await postBitbucketComments(reviewData.prInfo, bbConfig, findings, (reviewData.metadata as any).qualityWarnings || []);
-        const jiraResults = await postJiraComments(
-          prUrl,
-          reviewData.metadata.title,
-          reviewData.jiraKeys,
-          jiraConfig,
-          findings
-        );
+        const result = await publishReview(prUrl, toolArgs.review);
 
         return {
+          isError: !result.success,
           content: [
             {
               type: 'text',
-              text: JSON.stringify({ success: true, jiraResults }, null, 2),
+              text: JSON.stringify(result, null, 2),
             },
           ],
         };
@@ -305,6 +285,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 {
                   productName: prodName,
                   vaultPath,
+                  writing: 'Follow docs/document-writing.md: state the main point first, remove repetition, and preserve actionable rules, exact contracts, exceptions, and evidence. Keep required sections and edit scope.',
+                  diagrams: 'Follow docs/document-diagrams.md: include context, primary journey, architecture, ERD, and critical integration sequences where supported. Explain each diagram, preserve exact identifiers, and validate Mermaid.',
                   instructions: 'Inspect source evidence and ask only focused questions for missing decisions to generate nine sections (Overview, Goals/Metrics, User Stories, Functional Requirements with separate MoSCoW scope and release priority, System Architecture, Database Schema ERD, API Contract, Non-Functional Requirements, Dependencies & Risks). Resolve vault path dynamically (OBSIDIAN_VAULT_PATH env -> home dir -> user prompt). Write one English-only file, PRDD - <Name> (EN).md, under <VAULT>/01 Projects/PRDs/<sanitized-name>/ and append its link to Daftar PRDD.md. Do not create or modify an Indonesian file.',
                   sections: [
                     '1. Overview & Problem Statement',

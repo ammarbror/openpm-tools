@@ -148,7 +148,8 @@ void describe('fetchReviewData', () => {
       title: 'Fix KAIRA-123 login bug',
       description: 'Root cause analysis',
       rendered: { description: '<p>Root cause analysis</p>' },
-      source: { branch: { name: 'fix/KAIRA-123' } },
+      source: { branch: { name: 'fix/KAIRA-123' }, commit: { hash: 'a'.repeat(40) } },
+      destination: { commit: { hash: 'b'.repeat(40) } },
     };
     const commitsJson = {
       values: [
@@ -204,7 +205,8 @@ void describe('fetchReviewData', () => {
       title: 'Fix login bug',
       description: 'No jira keys here',
       rendered: { description: '<p>No jira keys here</p>' },
-      source: { branch: { name: 'fix/bug' } },
+      source: { branch: { name: 'fix/bug' }, commit: { hash: 'a'.repeat(40) } },
+      destination: { commit: { hash: 'b'.repeat(40) } },
     };
     const commitsJson = { values: [{ message: 'fix login' }] };
     const diff = '--- a/src/main.ts\n+++ b/src/main.ts\n@@ -1 +1 @@\n-const x = 1;\n+const x = 2;\n';
@@ -295,7 +297,7 @@ void describe('postBitbucketComments', () => {
     assert.ok(posts[0].body.includes('NO ISSUES FOUND'));
   });
 
-  void it('skips inline comments that fail without throwing', async () => {
+  void it('returns failed inline publication results without discarding summary success', async () => {
     const findings: ReviewFinding[] = [
       { severity: 'BUG', file: 'src/bad.ts', line: 5, message: 'Broken' },
     ];
@@ -308,8 +310,9 @@ void describe('postBitbucketComments', () => {
     };
 
     // Should not throw because inline failures are caught
-    await postBitbucketComments(prInfo, bbConfig, findings);
+    const results = await postBitbucketComments(prInfo, bbConfig, findings);
     assert.strictEqual(callCount, 2);
+    assert.strictEqual(results[0].success, false);
   });
 });
 
@@ -425,7 +428,7 @@ void describe('postJiraComments', () => {
     assert.ok(posts[0].includes('pull request was reviewed'));
   });
 
-  void it('transitions Jira issue to Request Change when findings exist', async () => {
+  void it('never changes Jira status when publishing findings', async () => {
     const findings: ReviewFinding[] = [
       { severity: 'CRITICAL', file: 'a.ts', line: 1, message: 'Issue 1' },
     ];
@@ -475,12 +478,8 @@ void describe('postJiraComments', () => {
       (c) => c.url.includes('/transitions') && c.method === 'POST',
     );
 
-    assert.strictEqual(transitionGetCalls.length, 1, 'should GET transitions once');
-    assert.strictEqual(transitionPostCalls.length, 1, 'should POST transitions once');
-    assert.ok(
-      transitionPostCalls[0].body?.includes('"transition":{"id":"31"}'),
-      'should transition to id 31 (Request Change)',
-    );
+    assert.strictEqual(transitionGetCalls.length, 0);
+    assert.strictEqual(transitionPostCalls.length, 0);
     assert.strictEqual(results.length, 1);
     assert.strictEqual(results[0].success, true);
   });

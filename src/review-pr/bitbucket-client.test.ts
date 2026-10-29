@@ -66,6 +66,8 @@ void describe('fetchPRInfo', () => {
       description: '<p>Root cause analysis</p>',
       sourceBranch: 'fix/KAIRA-123',
       commitMessages: ['first commit', 'second commit'],
+      sourceCommit: undefined,
+      destinationCommit: undefined,
     });
   });
 });

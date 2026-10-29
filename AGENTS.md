@@ -1,6 +1,6 @@
 # openpm-tools agent guidance
 
-This repository provides Jira, Bitbucket, and Obsidian workflows through a shared CLI and stdio MCP server.
+This repository provides Jira, Bitbucket, and document workflows through a shared CLI and stdio MCP server.
 
 ## Notion document workspace
 
@@ -10,6 +10,9 @@ local-vault storage instructions in document skills. The OpenPM hub is canonical
 preserve evidence and versioning rules, use page URLs, and verify saved content.
 Guides and local extraction do not themselves publish pages. Keep drafts when
 Notion is unavailable and report publication pending.
+
+Notion is the default document provider when `DOCUMENTS_PROVIDER` is unset or
+blank. Set `DOCUMENTS_PROVIDER=obsidian` only to opt into local Obsidian storage.
 
 Use the configured provider and root page automatically. With
 `DOCUMENTS_PROVIDER=notion` and `NOTION_ROOT_PAGE_URL` set, fetch that exact page

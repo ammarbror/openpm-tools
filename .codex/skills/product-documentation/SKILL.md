@@ -3,9 +3,18 @@ name: product-documentation
 description: Create or maintain an English product documentation hub that connects product strategy, delivery, operations, and user documentation without duplicating PRDs or technical designs.
 ---
 
+## Writing guidance
+
+Follow [Clear, concise, detailed documents](../../../docs/document-writing.md). State the main point first, remove repetition, and retain the detail needed to decide, implement, test, or operate. Explain purpose, scope, capabilities, and primary journeys briefly. Link canonical requirements, designs, runbooks, and delivery records rather than reproducing their details.
+
+## Diagram guidance
+
+Read [Diagrams in generated documents](../../../docs/document-diagrams.md) before drafting. Include a product/capability overview, primary journey, and audience-to-document map when supported; link canonical technical diagrams rather than duplicating designs.
+
 ## Document destination
 
 Check `DOCUMENTS_PROVIDER` in the repository configuration before choosing storage.
+If it is unset or blank, default to Notion; set it to `obsidian` only when local Obsidian storage is explicitly requested.
 Use the configured provider and `NOTION_ROOT_PAGE_URL` automatically; do not ask
 the user to select storage again. An explicit user destination overrides this
 default. If the configured page is inaccessible, report the access problem

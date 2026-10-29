@@ -1,9 +1,10 @@
-import type { PRInfo, ReviewFinding, BitbucketConfig, JiraConfig } from './types.ts';
+import type { PRInfo, ReviewFinding, BitbucketConfig, JiraConfig, ReviewSnapshot, ReviewSubmission } from './types.ts';
+import { createHash } from 'node:crypto';
 import { parsePRURL } from './url-parser.ts';
 import { extractJiraKeys } from './jira-detector.ts';
 import { buildReviewPrompt } from './prompts.ts';
-import { fetchPRInfo, fetchPRDiff, postGeneralComment, postInlineComment } from './bitbucket-client.ts';
-import { addIssueCommentADF, getTransitions, transitionIssue } from './jira-client.ts';
+import { fetchPRInfo, fetchPRDiff, postGeneralComment, postInlineComment, upsertReviewComment } from './bitbucket-client.ts';
+import { addIssueCommentADF, upsertReviewIssueComment } from './jira-client.ts';
 
 // ---------------------------------------------------------------------------
 // Config loaders
@@ -71,7 +72,7 @@ export function loadJiraConfig(): JiraConfig {
  *
  * 1. Parses the Bitbucket PR URL into PRInfo
  * 2. Loads both Bitbucket and Jira configs from env
- * 3. Fetches PR metadata and diff in parallel
+ * 3. Fetches the diff between two matching reads of the PR heads
  * 4. Extracts Jira issue keys from PR metadata
  * 5. Builds the review prompt string
  *
@@ -88,15 +89,25 @@ export async function fetchReviewData(
   bbConfig: BitbucketConfig;
   jiraConfig: JiraConfig;
   reviewPrompt: string;
+  snapshot: ReviewSnapshot;
 }> {
   const prInfo = parsePRURL(prUrl);
   const bbConfig = loadBitbucketConfig();
   const jiraConfig = loadJiraConfig();
 
-  const [metadata, diff] = await Promise.all([
-    fetchPRInfo(prInfo, bbConfig),
-    fetchPRDiff(prInfo, bbConfig),
-  ]);
+  const metadata = await fetchPRInfo(prInfo, bbConfig);
+  const diff = await fetchPRDiff(prInfo, bbConfig);
+  const after = await fetchPRInfo(prInfo, bbConfig);
+  if (!metadata.sourceCommit || !metadata.destinationCommit) throw new Error('PR commit hashes are missing; review incomplete');
+  if (metadata.sourceCommit !== after.sourceCommit || metadata.destinationCommit !== after.destinationCommit) {
+    throw new Error('PR changed while fetching; fetch and review again');
+  }
+  if (diff.trim() && !/^(diff --git |--- )/.test(diff)) throw new Error('Invalid diff; review incomplete');
+  const snapshot = {
+    sourceCommit: metadata.sourceCommit,
+    destinationCommit: metadata.destinationCommit,
+    diffHash: createHash('sha256').update(diff).digest('hex'),
+  };
 
   const jiraKeys = extractJiraKeys(metadata);
   
@@ -106,12 +117,12 @@ export async function fetchReviewData(
     qualityWarnings.push('PR Description is missing or too short. Provide a clear summary of changes.');
   }
   if (jiraKeys.length === 0) {
-    qualityWarnings.push('No linked Jira issue key found in PR title or branch name.');
+    qualityWarnings.push('No linked Jira issue found in PR title, source branch, or explicit description links.');
   }
 
-  const reviewPrompt = buildReviewPrompt(diff, metadata.title, metadata.description);
+  const reviewPrompt = buildReviewPrompt(diff, metadata.title, metadata.description, snapshot);
 
-  return { prInfo, prUrl, metadata: { ...metadata, qualityWarnings }, diff, jiraKeys, bbConfig, jiraConfig, reviewPrompt };
+  return { prInfo, prUrl, metadata: { ...metadata, qualityWarnings }, diff, jiraKeys, bbConfig, jiraConfig, reviewPrompt, snapshot };
 }
 
 // ---------------------------------------------------------------------------
@@ -121,19 +132,26 @@ export async function fetchReviewData(
 /**
  * Post review findings as comments on a Bitbucket pull request.
  *
- * - If there are no findings, posts a single "NO ISSUES FOUND" comment.
+ * - If a complete review has no findings, posts a single "NO ISSUES FOUND" comment.
+ * - Incomplete reviews are marked as incomplete and never claim a clean result.
  * - Otherwise posts a grouped general comment (CRITICAL > HIGH > BUG) with
  *   each finding formatted as `\`file:line\` — message`.
  * - Also posts inline comments on the affected lines with a `[SEVERITY]` prefix.
- * - Inline comments that fail (e.g. line not present in diff) are silently skipped.
+ * - Returns per-inline publication results, including failed anchors.
  */
 export async function postBitbucketComments(
   prInfo: PRInfo,
   bbConfig: BitbucketConfig,
   findings: ReviewFinding[],
   qualityWarnings: string[] = [],
-): Promise<void> {
+  submission?: ReviewSubmission,
+): Promise<{ file: string; line: number; success: boolean }[]> {
   const lines: string[] = [];
+  if (submission) {
+    lines.push(`Reviewed source ${submission.snapshot.sourceCommit}; destination ${submission.snapshot.destinationCommit}.`);
+    if (submission.status === 'incomplete') lines.push('**REVIEW INCOMPLETE**');
+    for (const limitation of submission.limitations) lines.push(`- Limitation: ${limitation}`);
+  }
 
   // PR Quality Warnings Header
   if (qualityWarnings.length > 0) {
@@ -144,8 +162,8 @@ export async function postBitbucketComments(
     lines.push('');
   }
 
-  if (findings.length === 0) {
-    lines.push('**NO ISSUES FOUND** – The pull request looks good with no CRITICAL, HIGH, or BUG findings.');
+  if (findings.length === 0 && submission?.status !== 'incomplete') {
+    lines.push('**NO ISSUES FOUND** – No definitive bugs found within the reviewed scope. This is not merge approval.');
   } else {
     // Build grouped general comment
     const groups: Record<string, ReviewFinding[]> = { CRITICAL: [], HIGH: [], BUG: [] };
@@ -183,7 +201,9 @@ export async function postBitbucketComments(
     }
     lines.push(`${(hasCritical || hasHigh) ? '3' : '1'}. 🧪 Retest the changes in staging environment.`);
   } else {
-    lines.push('1. 🟢 LGTM (Looks Good To Me). Ready for approval/merge once CI passes.');
+    lines.push(submission?.status === 'incomplete'
+      ? 'Complete the missing review context before drawing a conclusion.'
+      : 'Review CI and any stated limitations before deciding whether to merge.');
   }
   if (qualityWarnings.length > 0) {
     lines.push('- 📝 Please update the PR description to link the correct Jira ticket and clarify changes.');
@@ -191,18 +211,32 @@ export async function postBitbucketComments(
   lines.push('');
 
   const generalComment = lines.join('\n');
-  await postGeneralComment(prInfo, bbConfig, generalComment);
+  if (submission) await upsertReviewComment(prInfo, bbConfig, generalComment);
+  else await postGeneralComment(prInfo, bbConfig, generalComment);
 
-  // Post inline comments for findings with a line number
+  const inlineResults: { file: string; line: number; success: boolean }[] = [];
+  const inlineGroups = new Map<string, ReviewFinding[]>();
   for (const f of findings) {
     if (f.line == null) continue;
+    const key = JSON.stringify([f.file, f.line]);
+    const group = inlineGroups.get(key) ?? [];
+    group.push(f);
+    inlineGroups.set(key, group);
+  }
 
+  for (const group of inlineGroups.values()) {
+    const f = group[0];
+    const line = f.line!;
+    const message = group.map(finding => `[${finding.severity}] ${finding.message}`).join('\n\n');
     try {
-      await postInlineComment(prInfo, bbConfig, `[${f.severity}] ${f.message}`, f.file, f.line);
+      if (submission) await upsertReviewComment(prInfo, bbConfig, `${message}\nReviewed source ${submission.snapshot.sourceCommit}.`, { path: f.file, to: line }, submission.snapshot.sourceCommit);
+      else await postInlineComment(prInfo, bbConfig, message, f.file, line);
+      inlineResults.push({ file: f.file, line, success: true });
     } catch {
-      // Line doesn't exist in the diff or API error — skip silently
+      inlineResults.push({ file: f.file, line, success: false });
     }
   }
+  return inlineResults;
 }
 
 // ---------------------------------------------------------------------------
@@ -226,6 +260,7 @@ export async function postJiraComments(
   jiraKeys: string[],
   jiraConfig: JiraConfig,
   findings: ReviewFinding[],
+  submission?: ReviewSubmission,
 ): Promise<{ key: string; success: boolean }[]> {
   const results: { key: string; success: boolean }[] = [];
 
@@ -261,10 +296,17 @@ export async function postJiraComments(
         content: [{ type: 'text', text: 'Review summary:' }],
       });
 
-      if (findings.length === 0) {
+      if (submission) {
+        paragraphs.push({ type: 'paragraph', content: [{ type: 'text', text:
+          `Source ${submission.snapshot.sourceCommit}; destination ${submission.snapshot.destinationCommit}. ${submission.limitations.join('; ')}` }] });
+      }
+      if (submission?.status === 'incomplete') {
+        paragraphs.push({ type: 'paragraph', content: [{ type: 'text', text: 'REVIEW INCOMPLETE' }] });
+      }
+      if (findings.length === 0 && submission?.status !== 'incomplete') {
         paragraphs.push({
           type: 'paragraph',
-          content: [{ type: 'text', text: '- NO ISSUES FOUND' }],
+          content: [{ type: 'text', text: '- NO ISSUES FOUND within the reviewed scope; not merge approval.' }],
         });
       } else {
         paragraphs.push({
@@ -297,27 +339,13 @@ export async function postJiraComments(
         content: [{ type: 'text', text: 'See PR comments for details.' }],
       });
 
-      await addIssueCommentADF(key, jiraConfig, {
+      const doc = {
         type: 'doc',
         version: 1,
         content: paragraphs,
-      });
-
-      // Best-effort transition to Request Change status when findings exist
-      if (findings.length > 0) {
-        try {
-          const targetStatus = process.env.JIRA_REQUEST_CHANGE_STATUS ?? 'Request Change';
-          const transitions = await getTransitions(key, jiraConfig);
-          const matched = transitions.find(
-            (t) => t.name.toLowerCase() === targetStatus.toLowerCase(),
-          );
-          if (matched) {
-            await transitionIssue(key, jiraConfig, matched.id);
-          }
-        } catch {
-          // transition is best-effort, ignore failures
-        }
-      }
+      };
+      if (submission) await upsertReviewIssueComment(key, jiraConfig, prUrl, doc);
+      else await addIssueCommentADF(key, jiraConfig, doc);
 
       results.push({ key, success: true });
     } catch {

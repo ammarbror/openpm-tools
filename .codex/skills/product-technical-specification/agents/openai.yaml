@@ -1,0 +1,4 @@
+interface:
+  display_name: "Product & Technical Specification"
+  short_description: "Combine product requirements and technical design"
+  default_prompt: "Use $product-technical-specification to create or update an English combined product and technical specification from the available documents, code, and schema evidence."

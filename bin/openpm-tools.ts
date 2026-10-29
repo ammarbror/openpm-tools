@@ -7,14 +7,8 @@ import { runFromEnv as runReleaseWorkflow } from '../src/release-workflow/index.
 import { runFromEnv as runSprintReport } from '../src/sprint-report/index.ts';
 import { runFromEnv as runExtractKnowledge } from '../src/extract-knowledge/index.ts';
 import { generateStandupReport, formatStandupMarkdown } from '../src/daily-standup/index.ts';
-import {
-  fetchReviewData,
-  postBitbucketComments,
-  postJiraComments,
-  loadBitbucketConfig,
-  loadJiraConfig,
-} from '../src/review-pr/index.ts';
-import type { ReviewFinding } from '../src/review-pr/types.ts';
+import { fetchReviewData } from '../src/review-pr/index.ts';
+import { publishReview } from '../src/review-pr/publication.ts';
 
 function printHelp() {
   console.log(`
@@ -25,13 +19,13 @@ Usage:
 
 Commands:
   create-ticket <summary> [options]
-    --type <task|bug|story>       Issue type (default: auto-detected or Task)
+    --type <task|bug|story|epic>  Issue type (default: Task)
     --description <text>          Issue description
     --assignee <name>             Assignee display name
     --assignee-id <accountId>    Assignee Jira account ID
     --sprint <sprintName>        Target sprint name
     --epic <epicKey>              Parent Epic key (e.g. KAIRA-100)
-    --story-points <num>         Story points estimation
+    --story-points <num>         Required finite, non-negative scope-based estimate
 
   edit-ticket <issueKey> [options]
     --summary <text>              New summary
@@ -49,8 +43,8 @@ Commands:
   fetch-pr-review <prUrl>
     Fetch PR metadata, diff, and review prompt for LLM analysis.
 
-  post-pr-review <prUrl> <findingsJsonFileOrString>
-    Post LLM findings to Bitbucket PR and linked Jira issues.
+  post-pr-review <prUrl> <reviewJsonFileOrString>
+    Publish a review object with snapshot, status, limitations, and findings. Use --json for per-destination results.
 
   daily-standup [assigneeName]
     Generate a markdown daily standup report from Jira activities.
@@ -129,6 +123,10 @@ async function main() {
   try {
     switch (command) {
       case 'create-ticket': {
+        const pointArg = flags['story-points'];
+        if (typeof pointArg !== 'string' || !pointArg.trim()) {
+          throw new Error('--story-points requires a numeric estimate based on ticket scope');
+        }
         const summary = positional[0] || (flags.summary as string);
         if (!summary) {
           console.error('Error: summary is required for create-ticket');
@@ -213,6 +211,7 @@ async function main() {
             prUrl: reviewData.prUrl,
             prInfo: reviewData.prInfo,
             metadata: reviewData.metadata,
+            snapshot: reviewData.snapshot,
             jiraKeys: reviewData.jiraKeys,
             diff: reviewData.diff,
             reviewPrompt: reviewData.reviewPrompt,
@@ -228,11 +227,11 @@ async function main() {
         const prUrl = positional[0];
         const findingsRaw = positional[1] || (flags.findings as string);
         if (!prUrl || !findingsRaw) {
-          console.error('Error: PR URL and findings JSON are required for post-pr-review');
+          console.error('Error: PR URL and review JSON are required for post-pr-review');
           process.exit(1);
         }
 
-        let rawFindings: any[];
+        let rawFindings: unknown;
         if (findingsRaw.startsWith('[') || findingsRaw.startsWith('{')) {
           rawFindings = JSON.parse(findingsRaw);
         } else {
@@ -240,25 +239,14 @@ async function main() {
           rawFindings = JSON.parse(fs.readFileSync(findingsRaw, 'utf-8'));
         }
 
-        const findings: ReviewFinding[] = (Array.isArray(rawFindings) ? rawFindings : [rawFindings]).map((f: any) => ({
-          severity: f.severity || 'BUG',
-          file: f.file || 'unknown',
-          line: f.line != null ? Number(f.line) : undefined,
-          message: f.message || [f.title, f.description, f.suggestion].filter(Boolean).join(' - ') || 'Issue detected',
-        }));
-
-        const bbConfig = loadBitbucketConfig();
-        const jiraConfig = loadJiraConfig();
-        const reviewData = await fetchReviewData(prUrl);
-
-        await postBitbucketComments(reviewData.prInfo, bbConfig, findings, (reviewData.metadata as any).qualityWarnings || []);
-        const jiraResults = await postJiraComments(prUrl, reviewData.metadata.title, reviewData.jiraKeys, jiraConfig, findings);
+        const result = await publishReview(prUrl, rawFindings);
 
         if (isJson) {
-          console.log(JSON.stringify({ success: true, jiraResults }, null, 2));
+          console.log(JSON.stringify(result, null, 2));
         } else {
-          console.log('✅ Review comments posted successfully to Bitbucket & Jira.');
+          console.log(result.success ? 'Review published successfully.' : `Review publication incomplete: ${JSON.stringify(result)}`);
         }
+        if (!result.success) process.exitCode = 1;
         break;
       }
 
@@ -297,7 +285,9 @@ async function main() {
             '8. Non-Functional Requirements',
             '9. Dependencies & Risks'
           ],
-          outputs: [`PRDD - ${prodName} (EN).md`]
+          outputs: [`PRDD - ${prodName} (EN).md`],
+          writing: 'Follow docs/document-writing.md: state the main point first, remove repetition, and preserve actionable rules, exact contracts, exceptions, and evidence. Keep required sections and edit scope.',
+          diagrams: 'Follow docs/document-diagrams.md: include context, primary journey, architecture, ERD, and critical integration sequences where supported. Explain each diagram, preserve exact identifiers, and validate Mermaid. For edits, update only affected views.'
         };
         if (isJson) {
           console.log(JSON.stringify(guide, null, 2));
@@ -305,6 +295,8 @@ async function main() {
           console.log(`=== PRDD Creation Guide for "${prodName}" ===`);
           console.log('Run via AI Agent (Codex / OpenCode / Claude Code / Hermes / OpenClaw / Antigravity):');
           console.log('Use slash command /create-prdd to inspect sources, ask focused questions, and write one English nine-section PRDD.');
+          console.log(guide.writing);
+          console.log(guide.diagrams);
         }
         break;
       }
@@ -352,9 +344,10 @@ async function main() {
               'Next Actions',
             ],
           },
+          writing: 'Follow docs/document-writing.md: state the main point first, remove repetition, and preserve actionable rules, exact contracts, exceptions, and evidence. Keep required sections and edit scope.',
           mermaid: {
-            policy: 'Include only when it materially clarifies relationships, stages, dependencies, or choices; omit decorative diagrams.',
-            requirement: 'If included, use a valid mermaid fenced block, explain it in one sentence, and retain an equivalent prose explanation.',
+            policy: 'Follow docs/document-diagrams.md: include a theme/cluster map and a decision or next-action flow for topics with meaningful relationships; simple topics may remain diagram-free.',
+            requirement: 'Use valid mermaid fenced blocks, explain each in prose, label ideas and assumptions, and validate with an available parser or report manual review. Preserve the text summary when rendering is unavailable.',
           },
         };
         if (isJson) {
@@ -364,6 +357,8 @@ async function main() {
           console.log('Run via an AI agent with /brainstorm [topic] to conduct the one-question-per-turn interview.');
           console.log(`The agent exports one Markdown file: ${guide.output.filename}`);
           console.log('The CLI is guide-only; it does not run the interview or write the document.');
+          console.log(guide.writing);
+          console.log(guide.mermaid.policy);
         }
         break;
       }
@@ -391,7 +386,9 @@ async function main() {
             '8. Non-Functional Requirements',
             '9. Dependencies & Risks'
           ],
-          outputs: [`PRDD - ${prodName} (EN).md`]
+          outputs: [`PRDD - ${prodName} (EN).md`],
+          writing: 'Follow docs/document-writing.md: state the main point first, remove repetition, and preserve actionable rules, exact contracts, exceptions, and evidence. Keep required sections and edit scope.',
+          diagrams: 'Follow docs/document-diagrams.md: include context, primary journey, architecture, ERD, and critical integration sequences where supported. Explain each diagram, preserve exact identifiers, and validate Mermaid. For edits, update only affected views.'
         };
         if (isJson) {
           console.log(JSON.stringify(guide, null, 2));
@@ -399,6 +396,8 @@ async function main() {
           console.log(`=== PRDD Editing Guide for "${prodName}" ===`);
           console.log('Run via AI Agent (Codex / OpenCode / Claude Code / Hermes / OpenClaw / Antigravity):');
           console.log('Use slash command /edit-prdd to edit the 9-section English-only file.');
+          console.log(guide.writing);
+          console.log(guide.diagrams);
         }
         break;
       }

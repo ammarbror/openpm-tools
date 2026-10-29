@@ -3,9 +3,18 @@ name: brainstorm
 description: Runs a topic-agnostic, bounded brainstorming interview and exports one Markdown document.
 ---
 
+## Writing guidance
+
+Follow [Clear, concise, detailed documents](../../../docs/document-writing.md). State the main point first, remove repetition, and retain the detail needed to decide, implement, test, or operate. Keep distinct ideas brief and comparable. State the recommendation, selection rationale, trade-offs, and next actions; merge duplicate ideas without erasing meaningful alternatives.
+
+## Diagram guidance
+
+Read [Diagrams in generated documents](../../../docs/document-diagrams.md) before drafting. Prefer theme/cluster maps and decision or next-action flows for topics with meaningful relationships; simple topics may remain diagram-free.
+
 ## Document destination
 
 Check `DOCUMENTS_PROVIDER` in the repository configuration before choosing storage.
+If it is unset or blank, default to Notion; set it to `obsidian` only when local Obsidian storage is explicitly requested.
 Use the configured provider and `NOTION_ROOT_PAGE_URL` automatically; do not ask
 the user to select storage again. An explicit user destination overrides this
 default. If the configured page is inaccessible, report the access problem
@@ -80,7 +89,7 @@ quotes, and newlines. It contains `title`, `type: Brainstorm`, `topic`, `date`, 
 9. Open Questions & Risks
 10. Next Actions
 
-Keep all information understandable without rendering a diagram. Add Mermaid only when it materially
-clarifies relationships, stages, dependencies, or choices (usually a simple `flowchart`); include a
-one-sentence explanation immediately before it. Omit Mermaid for a simple list or when it would be
-decorative. Never use a diagram as a substitute for the prose explanation.
+Keep all information understandable without rendering a diagram. For topics with meaningful
+relationships, include a theme/cluster map and a decision or next-action flow following the shared
+diagram guide. Explain each diagram in prose. Simple topics may remain diagram-free; omit
+decorative views. Never use a diagram as a substitute for the prose explanation.

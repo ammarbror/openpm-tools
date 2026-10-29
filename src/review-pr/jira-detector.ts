@@ -8,9 +8,8 @@ export function extractJiraKeys(metadata: PRMetadata): string[] {
 
   const sources = [
     metadata.title,
-    metadata.description,
     metadata.sourceBranch,
-    ...metadata.commitMessages,
+    ...Array.from(metadata.description.matchAll(/https?:\/\/[^\s<>"']+\/browse\/(KAIRA-\d+)\b/gi), m => m[1]),
   ];
 
   for (const source of sources) {
