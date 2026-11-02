@@ -1,6 +1,6 @@
 ---
 name: brainstorm
-description: Runs a topic-agnostic, bounded brainstorming interview and exports one Markdown document.
+description: Run a bounded brainstorming interview for any topic and export one structured Markdown document.
 ---
 
 ## Writing guidance
@@ -29,67 +29,18 @@ publication pending. Extraction produces local staging files for the agent to
 publish through Notion; it does not upload automatically.
 
 
-# Brainstorm Skill
+# Brainstorm
 
-Run an interactive brainstorming session for any topic: product ideas, personal decisions,
-processes, technical problems, writing, research questions, or another subject the user names.
-The deliverable is exactly one Markdown file, written to the directory the user selects (default:
-the current working directory). This is an ideation record, not factual research or professional
-legal, medical, or financial advice.
+Use this skill for product ideas, personal decisions, processes, technical problems, writing, or research questions. The deliverable is exactly one Markdown file in the user-selected directory (default: current working directory); it is an ideation record, not factual research or professional advice.
 
-## Arguments and session controls
+- Interpret the user request as `<topic>` with optional `--quick`, `--deep`, and `--out <directory>` controls.
+- If no usable topic is provided, ask for it before creating a file.
+- Match the user's language and ask at most one substantive question per turn.
+- `--quick` uses at most 6 turns and may produce fewer than 8 ideas. Standard mode and `--deep` use at most 10 turns and require at least 8 distinct ideas unless the user explicitly asks for fewer. Do not treat the standard/deep idea requirement as optional.
+- `finish`, `done`, and `export` complete early. Never invent user facts; label gaps `TBD` or `N/A`.
 
-- Parse `$ARGUMENTS` as `<topic>`, with optional `--quick`, `--deep`, and `--out <directory>`.
-- If no usable topic is present, ask for the topic and do not create a file yet.
-- Adapt the language to the user's language. Ask at most one substantive question per turn.
-- `--quick` uses at most 6 turns and may produce fewer than 8 ideas. Standard mode and `--deep` use
-  at most 10 turns and require at least 8 distinct ideas unless the user explicitly requests fewer.
-  Never invent user facts: label gaps `TBD` or `N/A`.
-- `finish`, `done`, and `export` are early-completion signals. Summarize what is known and export.
+Interview in this order, adapting when already answered: objective and context; constraints/resources/time horizon/non-goals; divergent ideas; themes; prioritization criteria; prioritized directions and trade-offs; open questions, risks, and next actions. Label assistant-generated ideas `Source: synthesized idea`, user ideas `Source: user-provided`, inferences `Source: assumption`, and unresolved items `Source: open question`. For high-stakes topics, include a qualified-review note.
 
-## Interview flow
+Write `Brainstorm - <sanitized-topic> - <YYYY-MM-DD>.md`. Normalize newlines to spaces, remove control characters, replace runs outside letters/numbers/spaces/`_`/`-` with `-`, trim separators, cap the stem at 80 characters, and use `Topic` when empty. If the path exists, append ` (2)`, ` (3)`, etc.; never overwrite silently. Begin with YAML frontmatter containing quoted `title`, quoted `topic`, `type: Brainstorm`, `date`, and `status: Draft`.
 
-Use this order, adapting or skipping only when the user already answered it:
-
-1. Ask one focused question: “What outcome would make this brainstorming session useful?”
-   Capture audience and context only in later turns or when the user volunteers them.
-2. Ask for constraints, resources, time horizon, and non-goals.
-3. Diverge: generate ideas without judging them. Add synthesized ideas only with the label
-   `Source: synthesized idea`; preserve user ideas as `Source: user-provided`.
-4. Cluster ideas into themes and identify overlaps.
-5. Ask which criteria matter most (impact, effort, risk, reach, learning, or user-provided criteria).
-6. Prioritize separately from idea generation; explain the rationale and trade-offs.
-7. Synthesize recommended directions, open questions/risks, and concrete next actions.
-
-Do not imply that an idea is validated. Mark assistant inferences `Source: assumption` and unresolved
-items `Source: open question`. For high-stakes topics, include a qualified-review note and recommend
-appropriate professional review.
-
-## Markdown output contract
-
-Create one file named `Brainstorm - <sanitized-topic> - <YYYY-MM-DD>.md`. Normalize input newlines to
-spaces and remove control characters before using the topic. Replace runs of characters outside
-letters, numbers, spaces, `_`, and `-` with `-`, trim separators, cap the sanitized topic stem at
-80 characters, and use `Topic` when empty. If the path exists, append ` (2)`, ` (3)`, etc.; never
-overwrite silently. State the final path.
-
-The file begins with YAML frontmatter. YAML-quote `title` and `topic`, escaping backslashes, double
-quotes, and newlines. It contains `title`, `type: Brainstorm`, `topic`, `date`, and
-`status: Draft`. Include these sections in this order (use `TBD`/`N/A` where needed):
-
-1. Objective & Context
-2. Constraints & Non-Goals
-3. Assumptions & Evidence Boundaries
-4. Success Criteria
-5. Divergent Ideas (at least 8 distinct ideas in standard mode unless fewer were explicitly requested,
-   each with source label)
-6. Themes & Clusters
-7. Prioritization Criteria & Rationale
-8. Recommended Directions & Trade-offs
-9. Open Questions & Risks
-10. Next Actions
-
-Keep all information understandable without rendering a diagram. For topics with meaningful
-relationships, include a theme/cluster map and a decision or next-action flow following the shared
-diagram guide. Explain each diagram in prose. Simple topics may remain diagram-free; omit
-decorative views. Never use a diagram as a substitute for the prose explanation.
+Use these sections in order: Objective & Context; Constraints & Non-Goals; Assumptions & Evidence Boundaries; Success Criteria; Divergent Ideas; Themes & Clusters; Prioritization Criteria & Rationale; Recommended Directions & Trade-offs; Open Questions & Risks; Next Actions. For topics with meaningful relationships, include a theme/cluster map and a decision or next-action flow following the shared diagram guide; explain each in prose. Simple topics may remain diagram-free.

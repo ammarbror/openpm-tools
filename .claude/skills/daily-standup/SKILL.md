@@ -1,6 +1,6 @@
 ---
 name: daily-standup
-description: Generate real-time Markdown daily standup reports from Jira activities
+description: Generate a real-time Markdown daily standup report from Jira activity.
 ---
 
 ## Writing guidance
@@ -11,24 +11,12 @@ Follow [Clear, concise, detailed documents](../../../docs/document-writing.md). 
 
 Read [Diagrams in generated documents](../../../docs/document-diagrams.md) before drafting. Include a blocker/dependency flow only when it clarifies an actionable relationship; keep ordinary standups concise.
 
-# Daily Standup Report
+# Daily Standup
 
-Generate a markdown daily standup report from recent Jira activities (Yesterday's Progress, Today's Focus, Risks & Blockers) for the configured project or specific assignee.
-
-## Trigger
-
-Use this skill when the user requests a daily standup update, daily progress report, or status update of the team.
-
-## Usage
+Use this skill for a daily standup, daily progress report, or team status update. Run:
 
 ```bash
 npx openpm-tools daily-standup [assigneeName] [--json]
 ```
 
-Or programmatically in an agent workflow:
-```ts
-import { generateStandupReport, formatStandupMarkdown } from './src/daily-standup/index.ts';
-const report = await generateStandupReport(assigneeName);
-const markdown = formatStandupMarkdown(report);
-```
-
+The report should cover Yesterday's Progress, Today's Focus, and Risks & Blockers for the configured project or optional assignee. Use `--json` when the result will be consumed programmatically.

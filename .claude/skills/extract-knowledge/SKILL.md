@@ -1,6 +1,6 @@
 ---
 name: extract-knowledge
-description: "Extract document files (.docx, .pdf, .pptx, .xlsx, .md, .csv) into AI-friendly knowledge markdown for the configured Notion or Obsidian workspace. Usage: npx openpm-tools extract-knowledge <file-or-folder> [--llm] [--out <dir>] [--overwrite] [--vault <path>] [--json]"
+description: Convert supported documents into AI-friendly knowledge Markdown files in the configured Notion or Obsidian workspace.
 ---
 
 ## Writing guidance
@@ -29,20 +29,12 @@ publication pending. Extraction produces local staging files for the agent to
 publish through Notion; it does not upload automatically.
 
 
-# Extract Knowledge Skill
+# Extract Knowledge
 
-Run the following command using Bash:
+Run:
 
 ```bash
-npx openpm-tools extract-knowledge "$ARGUMENTS"
+npx openpm-tools extract-knowledge <file-or-folder> [--llm] [--out <dir>] [--overwrite] [--vault <path>] [--json]
 ```
 
-## Argument Extraction & Execution
-
-- Positional argument `<file-or-folder>`: Path to a file or directory of documents.
-- Optional flags:
-  - `--llm`: Send extracted content through an OpenAI-compatible LLM for enhancement.
-  - `--out <dir>`: Custom destination directory for output knowledge markdown files.
-  - `--overwrite`: Overwrite target `.knowledge.md` files if they already exist.
-  - `--vault <path>`: Root path of the Obsidian vault (overrides environmental configuration).
-  - `--json`: Format CLI output as structured JSON.
+The input may be `.docx`, `.pdf`, `.pptx`, `.xlsx`, `.md`, `.csv`, or another supported document format. Use `--llm` only when requested or useful, `--out` for a custom destination, `--vault` to override vault configuration, `--overwrite` only when authorized, and `--json` for structured output. Never overwrite existing knowledge files silently.

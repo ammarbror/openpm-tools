@@ -107,7 +107,7 @@ repository is opened as the Codex workspace.
 Verify the MCP connection, guide output, and local document extraction without
 external credentials using `node scripts/smoke-mcp.mjs`.
 
-The CLI and MCP server share the same `.env` configuration. PRDD CLI commands and `create_prdd` return guides; the agent reads sources, asks focused questions, and writes the document. `technical-docs`, `product-documentation`, and `product-technical-specification` are agent workflows with no CLI command or MCP tool. Their canonical skills live under `.codex/skills/` and are also used by the Hermes bridge.
+The CLI and MCP server share the same `.env` configuration. PRDD CLI commands and `create_prdd` return guides; the agent reads sources, asks focused questions, and writes the document. `technical-docs`, `product-documentation`, and `product-technical-specification` have no CLI command or MCP tool; they run as Codex/Hermes skills and as the OpenCode slash commands `technical-docs`, `product-documentation`, and `product-technical-specification`. Their canonical skills live under `.codex/skills/` and are also used by the Hermes bridge.
 
 Jira descriptions support Markdown fenced code blocks and Jira wiki `{code:language}` blocks. Creating or editing a description with a `mermaid` block renders an SVG, uploads it as an issue attachment, and adds an inline media reference beside the retained source. Jira credentials need attachment-upload permission, and attachments must be enabled.
 
@@ -126,6 +126,11 @@ Commands automatically registered:
 - `/sprint-report`
 - `/release-workflow`
 - `/extract-knowledge <file-or-folder>`
+- `/product-documentation <product-name>`
+- `/technical-docs <system-name>`
+- `/product-technical-specification <product-or-feature-name>`
+- `/create-kartini-doc <file-path>`
+- `/query-db <staging|prod> <sql-query>`
 
 ### 3. Claude Code
 Supports both **MCP Server** and **Native Skills**.
@@ -153,16 +158,27 @@ Add to your `~/.claude.json` or project `.mcp.json`:
 ```
 
 #### Option B: Native Skills
-This repo contains pre-packaged skills in `.claude/skills/`:
+This repo contains pre-packaged skills in `.claude/skills/`. Each one mirrors the
+canonical instructions in `.codex/skills/`; edit the canonical file and copy it to
+the mirror instead of diverging:
 - `.claude/skills/create-ticket`
-- `.claude/skills/create-prdd`
-- `.claude/skills/brainstorm`
-- `.claude/skills/edit-prdd`
 - `.claude/skills/edit-ticket`
-- `.claude/skills/release-workflow`
-- `.claude/skills/sprint-report`
 - `.claude/skills/review-pr`
+- `.claude/skills/daily-standup`
+- `.claude/skills/sprint-report`
+- `.claude/skills/release-workflow`
+- `.claude/skills/create-prdd`
+- `.claude/skills/edit-prdd`
+- `.claude/skills/brainstorm`
 - `.claude/skills/extract-knowledge`
+- `.claude/skills/product-documentation`
+- `.claude/skills/technical-docs`
+- `.claude/skills/product-technical-specification`
+- `.claude/skills/create-kartini-doc`
+- `.claude/skills/query-db`
+
+`.agents/skills` is a symlink to `.codex/skills` so harnesses that read the
+`.agents` convention load the same canonical instructions.
 
 ### 4. Hermes-Agent
 Hermes uses the native `/openpm-tools` project skill and the same stdio MCP server.
@@ -365,6 +381,7 @@ PRDD requirements keep MoSCoW scope (`Must`, `Should`, `Could`, `Won't`) separat
 Use the Codex skill to create or maintain a product hub linking canonical delivery documents:
 
 - Skill instructions: `.codex/skills/product-documentation/SKILL.md`
+- Slash command: `/product-documentation <product-name>`
 - Output folder: `<VAULT>/01 Projects/Product Documentation/`
 - Filename: `Product Documentation - <Name>.md`
 - Index: `Daftar Product Documentation.md`, with one English wikilink per hub
@@ -376,6 +393,7 @@ Use the Codex skill to create or maintain a product hub linking canonical delive
 Use the Codex skill for system, architecture, or technical design documentation:
 
 - Skill instructions: `.codex/skills/technical-docs/SKILL.md`
+- Slash command: `/technical-docs <system-name>`
 - Output folder: `<VAULT>/01 Projects/Technical Documentation/`
 - Filename: `Technical Documentation - <Name>.md`
 - Required structure: 10 English sections covering architecture, security, data model, stack, and UI navigation
@@ -386,6 +404,7 @@ Use the Codex skill for system, architecture, or technical design documentation:
 Use `$product-technical-specification` to create or edit a combined Product & Technical Specification, or convert existing PRDDs and technical designs into one document.
 
 - Skill instructions: `.codex/skills/product-technical-specification/SKILL.md`
+- Slash command: `/product-technical-specification <product-or-feature-name>`
 - Default destination: the configured Notion root's `Product & Technical Specifications` category
 - Obsidian folder: `<VAULT>/01 Projects/Product & Technical Specifications/`
 - Title: `Product & Technical Specification - <Name>` (add `.md` for Obsidian)
@@ -455,12 +474,13 @@ openpm-tools/
 │   ├── release-workflow/
 │   ├── sprint-report/
 │   └── review-pr/
-├── .claude/skills/          # Claude Code skill manifests
-├── .codex/skills/           # Codex skills, including technical-docs and product-documentation
+├── .claude/skills/          # Claude Code mirrors of the canonical Codex skills
+├── .codex/skills/           # Canonical skills, including technical-docs and product-documentation
+├── .agents/skills           # Symlink to .codex/skills for .agents-based harnesses
 ├── .hermes/skills/          # Hermes bridge to the canonical workflow skills
 ├── AGENTS.md                 # Codex/repository working guidance
-├── .opencode/command/       # OpenCode command definitions (brainstorm.md, create-prdd.md)
-└── opencode.json            # OpenCode command registrations
+├── .opencode/command/       # OpenCode command definitions for skills that need extended prompts
+└── opencode.json            # OpenCode command registrations (all 13 workflows)
 ```
 
 ---

@@ -9,6 +9,8 @@ import { runFromEnv as runExtractKnowledge } from '../src/extract-knowledge/inde
 import { generateStandupReport, formatStandupMarkdown } from '../src/daily-standup/index.ts';
 import { fetchReviewData } from '../src/review-pr/index.ts';
 import { publishReview } from '../src/review-pr/publication.ts';
+import { publishKartiniDocWorkflow } from '../src/kartini-doc/index.ts';
+import { executeKartiniQuery } from '../src/kartini-db/index.ts';
 
 function printHelp() {
   console.log(`
@@ -68,6 +70,20 @@ Commands:
     --overwrite                   Overwrite target file if exists
     --vault <path>                Custom Obsidian Vault path
 
+  publish-kartini-doc <filePath> [options]
+    Publish or update a Markdown document in Kartini OS (https://kartini-os.com/product-documentation).
+    --title <title>               Document title (default: extracted from H1)
+    --summary <summary>           Short summary
+    --category <cat>              Category: project, system, guideline, or other (default: project)
+    --doc-number <PD-YYYY-XXXX>   Target specific document number to update
+    --update-existing             Update if matching document title already exists
+
+  query-db <staging|prod> <sql-query> [options]
+    Execute SQL query on PostgreSQL DB (staging or prod). Prod is strictly read-only.
+    Alias: kartini-db
+    --json                        Output JSON formatted results
+    --read-write                  Allow write transactions on staging (default: read-only)
+
 Global Options:
   --json                          Output raw JSON result
   --help, -h                      Show this help message
@@ -77,7 +93,7 @@ Global Options:
 function parseArgs(args: string[]) {
   const flags: Record<string, string | boolean> = {};
   const positional: string[] = [];
-  const BOOLEAN_FLAGS = new Set(['llm', 'overwrite', 'json', 'quick', 'deep']);
+  const BOOLEAN_FLAGS = new Set(['llm', 'overwrite', 'json', 'quick', 'deep', 'update-existing', 'read-write']);
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -417,6 +433,74 @@ async function main() {
           json: isJson,
         });
         console.log(result);
+        break;
+      }
+
+      case 'publish-kartini-doc':
+      case 'create-kartini-doc': {
+        const filePath = positional[0] || (flags.file as string);
+        if (!filePath) {
+          console.error('Error: Markdown file path is required for publish-kartini-doc');
+          process.exit(1);
+        }
+        const result = await publishKartiniDocWorkflow({
+          filePath,
+          title: (flags.title as string) || undefined,
+          summary: (flags.summary as string) || undefined,
+          category: (flags.category as any) || undefined,
+          docNumber: (flags['doc-number'] as string) || undefined,
+          updateExisting: Boolean(flags['update-existing']),
+        });
+        if (isJson) {
+          console.log(JSON.stringify({ success: true, document: result }, null, 2));
+        } else {
+          console.log('✅ Document published successfully to Kartini OS!');
+          console.log(`- Document Number: ${result.docNumber}`);
+          console.log(`- Title:           ${result.title}`);
+          console.log(`- Category:        ${result.category}`);
+          console.log(`- Status:          ${result.status}`);
+          console.log(`- Sections:        ${result.sectionCount}`);
+          console.log(`- Version ID:      ${result.versionId}`);
+          console.log(`- URL:             ${result.url}`);
+        }
+        break;
+      }
+
+      case 'query-db':
+      case 'kartini-db': {
+        const targetEnv = positional[0]?.toLowerCase();
+        if (targetEnv !== 'staging' && targetEnv !== 'prod') {
+          console.error('Error: Environment must be either "staging" or "prod". Usage: query-db <staging|prod> <query>');
+          process.exit(1);
+        }
+        const sqlQuery = positional.slice(1).join(' ').trim() || (flags.query as string);
+        if (!sqlQuery) {
+          console.error('Error: SQL query is required. Usage: query-db <staging|prod> "<sql-query>"');
+          process.exit(1);
+        }
+
+        const isProd = targetEnv === 'prod';
+        const strictReadOnly = isProd || !Boolean(flags['read-write']);
+
+        const queryRes = await executeKartiniQuery(targetEnv, sqlQuery, {
+          json: isJson,
+          strictReadOnly,
+        });
+
+        if (queryRes.exitCode !== 0) {
+          if (isJson) {
+            console.error(JSON.stringify({ success: false, error: queryRes.stderr }, null, 2));
+          } else {
+            console.error(`❌ Query Failed:\n${queryRes.stderr}`);
+          }
+          process.exit(queryRes.exitCode);
+        }
+
+        if (isJson) {
+          console.log(queryRes.stdout);
+        } else {
+          console.log(queryRes.stdout);
+        }
         break;
       }
 

@@ -32,6 +32,8 @@ Loading this skill does not authorize unrelated writes, messages, or scheduled j
 | `sprint-report` | `.codex/skills/sprint-report/SKILL.md` |
 | `release-workflow` | `.codex/skills/release-workflow/SKILL.md` |
 | `create-prdd` | `.codex/skills/create-prdd/SKILL.md` |
+| `create-kartini-doc` | `.codex/skills/create-kartini-doc/SKILL.md` |
+| `query-db` | `.codex/skills/query-db/SKILL.md` |
 | `edit-prdd` | `.codex/skills/edit-prdd/SKILL.md` |
 | `brainstorm` | `.codex/skills/brainstorm/SKILL.md` |
 | `extract-knowledge` | `.codex/skills/extract-knowledge/SKILL.md` |

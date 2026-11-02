@@ -4,3 +4,9 @@ node_modules
 .omo
 sprint-report-*.html
 sprint-report-*.md
+_torabika_prdd_sync.md
+lark-*.png
+output/
+scripts/publish-*.ts
+.agent
+.gemini/

@@ -36,7 +36,7 @@ Use this skill for product ideas, personal decisions, processes, technical probl
 - Interpret the user request as `<topic>` with optional `--quick`, `--deep`, and `--out <directory>` controls.
 - If no usable topic is provided, ask for it before creating a file.
 - Match the user's language and ask at most one substantive question per turn.
-- Quick mode uses at most 6 turns. Standard/deep mode uses at most 10 turns and at least 8 distinct ideas unless fewer are explicitly requested.
+- `--quick` uses at most 6 turns and may produce fewer than 8 ideas. Standard mode and `--deep` use at most 10 turns and require at least 8 distinct ideas unless the user explicitly asks for fewer. Do not treat the standard/deep idea requirement as optional.
 - `finish`, `done`, and `export` complete early. Never invent user facts; label gaps `TBD` or `N/A`.
 
 Interview in this order, adapting when already answered: objective and context; constraints/resources/time horizon/non-goals; divergent ideas; themes; prioritization criteria; prioritized directions and trade-offs; open questions, risks, and next actions. Label assistant-generated ideas `Source: synthesized idea`, user ideas `Source: user-provided`, inferences `Source: assumption`, and unresolved items `Source: open question`. For high-stakes topics, include a qualified-review note.

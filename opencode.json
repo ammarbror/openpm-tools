@@ -40,6 +40,26 @@
     "extract-knowledge": {
       "description": "Extract document files (.docx, .pdf, .pptx, .xlsx, .md, .csv) into AI-friendly knowledge markdown in Notion or Obsidian vault. Usage: /extract-knowledge <file-or-folder> [--llm] [--out <dir>] [--overwrite] [--vault <path>] [--json]",
       "template": "Read docs/notion-workflow.md when DOCUMENTS_PROVIDER=notion. Read docs/document-writing.md and docs/document-diagrams.md. Follow instructions in .opencode/command/extract-knowledge.md to extract knowledge files. Arguments: $ARGUMENTS"
+    },
+    "product-documentation": {
+      "description": "Creates or maintains an English product documentation hub with ten required sections in Notion or Obsidian. Usage: /product-documentation <product-name>",
+      "template": "Read docs/notion-workflow.md when DOCUMENTS_PROVIDER=notion. Read docs/document-writing.md and docs/document-diagrams.md. Follow instructions in .opencode/command/product-documentation.md to create or edit the product hub, and read .codex/skills/product-documentation/SKILL.md for the complete section expectations and completion checklist. There is no CLI or MCP writer: use file, Notion MCP, and terminal tools, then verify saved content. Arguments: $ARGUMENTS"
+    },
+    "technical-docs": {
+      "description": "Creates or edits English technical documentation with ten required sections in Notion or Obsidian. Usage: /technical-docs <system-name>",
+      "template": "Read docs/notion-workflow.md when DOCUMENTS_PROVIDER=notion. Read docs/document-writing.md and docs/document-diagrams.md. Follow instructions in .opencode/command/technical-docs.md to create or edit the technical document, and read .codex/skills/technical-docs/SKILL.md for the complete section expectations and completion checklist. There is no CLI or MCP writer: use file, Notion MCP, and terminal tools, then verify saved content. Arguments: $ARGUMENTS"
+    },
+    "product-technical-specification": {
+      "description": "Creates, edits, or combines PRDs and technical designs into one English Product & Technical Specification with twelve required sections. Usage: /product-technical-specification <product-or-feature-name>",
+      "template": "Read docs/notion-workflow.md when DOCUMENTS_PROVIDER=notion. Read docs/document-writing.md and docs/document-diagrams.md. Follow instructions in .opencode/command/product-technical-specification.md to create, edit, or convert the combined specification, and read .codex/skills/product-technical-specification/SKILL.md for the complete section contracts and publication checks. There is no CLI or MCP writer: use file, Notion MCP, and terminal tools, then verify saved content. Arguments: $ARGUMENTS"
+    },
+    "create-kartini-doc": {
+      "description": "Creates or updates a Product Documentation document in Kartini OS from a Markdown specification. Usage: /create-kartini-doc <file-path> [--category <cat>] [--summary <text>] [--doc-number <PD-YYYY-XXXX>]",
+      "template": "Follow instructions in .opencode/command/create-kartini-doc.md to publish or update a Markdown specification in Kartini OS (https://kartini-os.com/product-documentation). Use npx openpm-tools publish-kartini-doc $ARGUMENTS and read .codex/skills/create-kartini-doc/SKILL.md for detailed formatting and verification steps. Arguments: $ARGUMENTS"
+    },
+    "query-db": {
+      "description": "Query PostgreSQL databases (staging or prod readonly). Usage: /query-db <staging|prod> <sql-query> [--json]",
+      "template": "Follow instructions in .opencode/command/query-db.md to query database in staging or prod readonly. Use npx openpm-tools query-db $ARGUMENTS and read .codex/skills/query-db/SKILL.md for connection details and safety rules. Arguments: $ARGUMENTS"
     }
   }
 }
