@@ -5,7 +5,7 @@ description: Create, edit, or combine PRDs and technical designs into one Englis
 
 ## Writing guidance
 
-Follow [Clear, concise, detailed documents](../../../docs/document-writing.md). State the main point first, remove repetition, and retain the detail needed to decide, implement, test, or operate. Connect each product behavior to its technical contract and verification. Use stable cross-references instead of restating requirements across UX, architecture, APIs, and testing.
+Follow [Clear, concise, detailed documents](../../../docs/document-writing.md). Open every specification (before Section 1) with a concise `## TL;DR` section summarizing the problem, scope, key architectural/contract changes, and status/blockers. Eliminate all residual wording, filler, meta-commentary, and repetition so prose is to the point, clear, and clean. Connect each product behavior to its technical contract and verification using stable cross-references rather than restating requirements.
 
 ## Diagram guidance
 
@@ -32,12 +32,12 @@ Produce one implementation-ready specification for a product or feature. Connect
 4. On conversion, synthesize the sources into the structure below. Preserve requirement IDs, technical identifiers, decisions, and substantive acceptance criteria. Merge duplicates and surface conflicts with their sources. Preserve the original source documents unless the user explicitly requests replacement or archiving. Do not create a second combined spec when one already exists.
 5. Write a useful draft from available evidence. Use `TBD` for missing decisions and `Unverified` for unsupported implementation/release claims. Keep `status: Draft` while material decisions remain unresolved; record approval only with evidence.
 6. For edits, change the requested facts and directly affected requirements, UX, contracts, data model, security, tests, rollout, and traceability. Preserve unrelated content. Re-read and reconcile if the document changed before saving; do not overwrite a conflicting active edit.
-7. Add metadata: `title`, `version`, `status`, `author`, `date`, `type: Product & Technical Specification`, `language: en`, `product_owner`, `technical_owner`, and `source`. Owners may be `TBD`. Start a new spec at `1.0`; increment the document version for a material edit and append a version-history row. A document revision does not imply a software release.
+7. Add metadata: `title`, `version`, `status`, `author`, `date`, `type: Product & Technical Specification`, `language: en`, `product_owner`, `technical_owner`, and `source`. Set `author` (and version-history authors) to the active user's profile name (from the authenticated workspace/tool profile or git user, or `TBD` if unavailable)—never to the AI/CLI tool name. Owners may be `TBD`. Start a new spec at `1.0`; increment the document version for a material edit and append a version-history row. A document revision does not imply a software release.
 8. Verify saved content and index membership, then return the canonical page URL or absolute file path and remaining material unknowns.
 
 ## Required structure
 
-Keep these twelve primary headings in order. Scale detail to the product or feature; use a reasoned `Not applicable` where appropriate rather than inventing content.
+Start with an opening `## TL;DR` section (concise summary of user problem, scope, primary architecture/contract changes, and status/blockers), then keep these twelve primary headings in order. Scale detail to the product or feature; use a reasoned `Not applicable` where appropriate rather than inventing content.
 
 ### 1. Product Context & Ownership
 
@@ -119,6 +119,6 @@ End with `### Version History` containing document version, date, author, and ch
 - Validate with an available Mermaid parser/renderer and name it. If unavailable, manually review syntax and report that parser/render verification was not performed.
 - For Notion, inspect every saved diagram opening fence and language: `mermaid`, with the expected `flowchart`, `sequenceDiagram`, `erDiagram`, or `stateDiagram-v2` first line. A successful save or correct read-back does not establish visual rendering; claim rendering only after checking it.
 - Use Notion Markdown links or native mentions in table cells, not raw HTML anchors. Keep child-page/database tags intact during edits; prefer targeted updates.
-- Read back all required headings in order, metadata, version history, exact identifiers, tables, source links, diagrams, and any truncation/unknown-block indicators. Confirm the category/index references the spec once.
+- Read back the opening `## TL;DR` section, all required headings in order, metadata, version history, exact identifiers, tables, source links, diagrams, and any truncation/unknown-block indicators. Confirm the category/index references the spec once and all residual/filler wording is removed.
 - Ensure every substantive requirement has acceptance criteria and traceability or an explicit unresolved item. Preserve conflicting source claims with evidence; do not silently resolve product-versus-code differences.
 - Creating this document does not authorize code changes, migrations, ticket edits, source-document deletion, or messages to other people. Report publication pending when storage fails.

@@ -214,12 +214,12 @@ export function parseMarkdownToKartiniDocument(content: string, options?: {
   // Strip prefix like "Product & Technical Specification: "
   title = title.replace(/^Product\s*(&|and)?\s*Technical\s*Specification:\s*/i, '').trim();
 
-  // Try extracting summary from Executive Summary or Overview
+  // Try extracting summary from TL;DR, Executive Summary, Overview, or Problem Statement
   let summary = options?.defaultSummary || '';
   if (!summary) {
-    const summaryMatch = content.match(/(?:Executive Summary|Overview|Problem Statement)\s*\n+([^\n#]+)/i);
+    const summaryMatch = content.match(/(?:TL;DR|TL:DR|Executive Summary|Overview|Problem Statement)\s*\n+([^\n#]+)/i);
     if (summaryMatch) {
-      summary = summaryMatch[1].trim().slice(0, 300);
+      summary = summaryMatch[1].replace(/^[-*]\s+/, '').trim().slice(0, 300);
     } else {
       summary = `Product documentation for ${title}`;
     }

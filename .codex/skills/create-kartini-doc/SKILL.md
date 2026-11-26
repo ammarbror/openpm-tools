@@ -30,10 +30,12 @@ Use this skill to convert and publish a local Markdown product specification, PR
 ## Execution Workflow
 
 ### Step 1: Prepare the Source Markdown
-Ensure the source specification file exists (e.g. `docs/specifications/<name>.md` or generated via `product-technical-specification` / `product-documentation`). The document should have:
-- Document title in `# Title` or frontmatter.
-- Clear summary in the executive summary / problem statement.
-- Sections partitioned by `## Section Title`.
+Ensure the source specification file exists (e.g. `docs/specifications/<name>.md` or generated via `product-technical-specification` / `product-documentation`) and follows [Clear, concise, detailed documents](../../../docs/document-writing.md):
+- Document title in `# Title` or frontmatter (if `author` is included, set it to the active user's profile or `TBD`—never the AI/CLI tool name).
+- Start the document body with a concise `## TL;DR` section before the main sections.
+- Clear summary in the `TL;DR` / executive summary / problem statement.
+- Sections partitioned by `## Section Title` without numeric prefixes.
+- Eliminate all residual wording, draft chatter, meta-commentary, filler, and repetition so every section is to the point, clear, and clean.
 
 ### Step 2: Publish via OpenPM CLI
 Run the integrated CLI command from the repository root:

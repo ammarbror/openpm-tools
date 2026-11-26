@@ -42,8 +42,10 @@ Loading this skill does not authorize unrelated writes, messages, or scheduled j
 | `product-technical-specification` | `.codex/skills/product-technical-specification/SKILL.md` |
 
 3. For documents and reports, read `<root>/docs/document-writing.md` and
-   `<root>/docs/document-diagrams.md`. Keep explanations clear, concise, detailed,
-   and source-backed; use diagrams for meaningful flows and relationships.
+   `<root>/docs/document-diagrams.md`. Open created documents with `## TL;DR`,
+   remove all residual wording and filler so content is to the point, clear, and
+   clean, set `author` to the active user's profile (never the tool name), and use
+   diagrams for meaningful flows and relationships.
 4. Use the discovered `openpm-tools` MCP tools when their inputs match the workflow.
    Tool prefixes depend on Hermes registration; inspect discovery rather than
    inventing tool names. For CLI operations, run `npm run cli -- <command> ...` from

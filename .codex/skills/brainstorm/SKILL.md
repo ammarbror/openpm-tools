@@ -5,7 +5,7 @@ description: Run a bounded brainstorming interview for any topic and export one 
 
 ## Writing guidance
 
-Follow [Clear, concise, detailed documents](../../../docs/document-writing.md). State the main point first, remove repetition, and retain the detail needed to decide, implement, test, or operate. Keep distinct ideas brief and comparable. State the recommendation, selection rationale, trade-offs, and next actions; merge duplicate ideas without erasing meaningful alternatives.
+Follow [Clear, concise, detailed documents](../../../docs/document-writing.md). Open the exported document with `## TL;DR` before `Objective & Context` summarizing the core question, chosen direction, and immediate next actions. Eliminate all residual interview chatter, filler, meta-commentary, and repetition so every section is to the point, clear, and clean. Keep distinct ideas brief and comparable; merge duplicate ideas without erasing meaningful alternatives.
 
 ## Diagram guidance
 
@@ -25,9 +25,7 @@ below apply only to Obsidian. Preserve the content, evidence, section, interview
 and versioning requirements. Store metadata as page properties or a table. Use
 Notion page links, search before creating, read before editing, and read back saved
 pages. Without an authenticated Notion connection, preserve the draft and report
-publication pending. Extraction produces local staging files for the agent to
-publish through Notion; it does not upload automatically.
-
+publication pending.
 
 # Brainstorm
 
@@ -43,4 +41,4 @@ Interview in this order, adapting when already answered: objective and context; 
 
 Write `Brainstorm - <sanitized-topic> - <YYYY-MM-DD>.md`. Normalize newlines to spaces, remove control characters, replace runs outside letters/numbers/spaces/`_`/`-` with `-`, trim separators, cap the stem at 80 characters, and use `Topic` when empty. If the path exists, append ` (2)`, ` (3)`, etc.; never overwrite silently. Begin with YAML frontmatter containing quoted `title`, quoted `topic`, `type: Brainstorm`, `date`, and `status: Draft`.
 
-Use these sections in order: Objective & Context; Constraints & Non-Goals; Assumptions & Evidence Boundaries; Success Criteria; Divergent Ideas; Themes & Clusters; Prioritization Criteria & Rationale; Recommended Directions & Trade-offs; Open Questions & Risks; Next Actions. For topics with meaningful relationships, include a theme/cluster map and a decision or next-action flow following the shared diagram guide; explain each in prose. Simple topics may remain diagram-free.
+Open with `## TL;DR` and then use these sections in order: Objective & Context; Constraints & Non-Goals; Assumptions & Evidence Boundaries; Success Criteria; Divergent Ideas; Themes & Clusters; Prioritization Criteria & Rationale; Recommended Directions & Trade-offs; Open Questions & Risks; Next Actions. Keep prose clean and free of residual interview wording. For topics with meaningful relationships, include a theme/cluster map and a decision or next-action flow following the shared diagram guide; explain each in prose. Simple topics may remain diagram-free.

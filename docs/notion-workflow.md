@@ -34,8 +34,13 @@ readability, and validation; preserve Mermaid source and text summaries on read-
 Its local-file storage instructions apply only to the Obsidian provider. In Notion:
 
 - Drop the `.md` extension from the page title. Keep English-only document titles.
+- Open generated documents (before Section 1) with a concise `## TL;DR` section, and
+  keep prose direct, clear, and clean with zero residual wording, meta-commentary, or
+  stale edit leftovers.
 - Put title, version, status, author, date, language and sources in a metadata table
-  or page properties instead of requiring YAML frontmatter.
+  or page properties instead of requiring YAML frontmatter. Set `author` to the active
+  user's profile name (from the authenticated Notion/workspace profile or git user, or
+  `TBD` if unavailable)—never to the AI/CLI tool name.
 - Search within the selected hub before creating. Preserve existing documents.
 - Read the full current page before editing and preserve unrelated content. If it
   changed since reading, re-read and reconcile before writing.

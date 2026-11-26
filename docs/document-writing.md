@@ -7,6 +7,9 @@ language, section structure, evidence, versioning, and publication rules.
 
 ## Put the reader's answer first
 
+- Start every created document (after metadata/title and before Section 1) with a concise
+  `## TL;DR` section summarizing the core purpose, key decision or outcome, scope
+  boundary, and current status or next action in 3–5 scannable lines or bullets.
 - Open with the purpose, problem or outcome, and scope. For substantial documents,
   use a short overview so readers understand the whole before the detail. For short
   reports, lead directly with the result, current focus, or blocker.
@@ -15,9 +18,10 @@ language, section structure, evidence, versioning, and publication rules.
 - Use plain words, active verbs, and consistent domain terms. Define unfamiliar
   abbreviations once. Replace vague claims such as "fast", "secure", or "works
   correctly" with observable behavior or sourced criteria; mark unknown targets `TBD`.
-- Remove repeated introductions, generic background, filler, rhetorical questions,
-  and closing summaries that repeat the opening. Do not repeat the same fact in
-  prose, a table, and a diagram; use each format for a distinct purpose.
+- Eliminate all residual wording: remove conversational filler, AI meta-commentary,
+  throat-clearing, redundant introductions, duplicate restatements across prose/tables/diagrams,
+  vague buzzwords, and stale draft or edit leftovers. Keep every sentence to the point,
+  clear, and clean.
 
 ## Keep the detail that changes understanding or action
 
@@ -54,7 +58,8 @@ contracts and user-supplied Mermaid within the authorized scope.
 1. Can the intended reader quickly find the purpose, scope, main behavior or
    decision, and any material blocker or next action?
 2. Does every paragraph, table, diagram, and example add information the reader
-   needs? Merge or remove repetition without losing requirements or evidence.
+   needs? Verify the opening `## TL;DR` is present and all residual wording, filler,
+   and repetition are removed without losing requirements or evidence.
 3. Are important conditions, exceptions, exact contracts, and verification criteria
    still explicit? Could the reader act without guessing?
 4. Do prose, tables, examples, diagrams, and status labels agree? Is every factual

@@ -33,7 +33,7 @@ export async function enhanceWithLLM(
           {
             role: 'system',
             content:
-              'You are a technical document analyst. Your task is to enhance the provided markdown content by correcting parsing artifacts, structuring headings, formatting tables cleanly, and adding metadata where helpful. Return ONLY the enhanced markdown content. Do not include markdown code block backticks around your entire response.',
+              'You are a technical document analyst. Enhance the provided markdown content by opening with a concise ## TL;DR section summarizing key takeaways and scope, eliminating parsing artifacts and residual or filler wording so prose is to the point, clear, and clean, structuring headings, and formatting tables cleanly without dropping source facts, provenance, or exact identifiers. Return ONLY the enhanced markdown content. Do not include markdown code block backticks around your entire response.',
           },
           {
             role: 'user',

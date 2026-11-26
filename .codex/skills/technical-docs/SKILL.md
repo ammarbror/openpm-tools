@@ -5,40 +5,21 @@ description: Create or edit English technical documentation in the configured No
 
 ## Writing guidance
 
-Follow [Clear, concise, detailed documents](../../../docs/document-writing.md). State the main point first, remove repetition, and retain the detail needed to decide, implement, test, or operate. Explain system purpose and boundaries first, then responsibilities, interactions, contracts, and failure handling. Keep exact technical detail in the relevant section or appendix and reference it elsewhere.
+Follow [Clear, concise, detailed documents](../../../docs/document-writing.md). Open with `## TL;DR` before Section 1 summarizing system purpose, architecture, boundaries, and status. Eliminate all residual wording, filler, meta-commentary, and repetition so prose is to the point, clear, and clean while keeping exact technical detail in its canonical section or appendix.
 
 ## Diagram guidance
 
 Read [Diagrams in generated documents](../../../docs/document-diagrams.md) before drafting. Cover architecture, module dependencies, ERD, and relevant access, navigation, integration, and recovery flows using focused diagrams.
 
-## Document destination
-
-Check `DOCUMENTS_PROVIDER` in the repository configuration before choosing storage.
-If it is unset or blank, default to Notion; set it to `obsidian` only when local Obsidian storage is explicitly requested.
-Use the configured provider and `NOTION_ROOT_PAGE_URL` automatically; do not ask
-the user to select storage again. An explicit user destination overrides this
-default. If the configured page is inaccessible, report the access problem
-instead of silently changing destinations.
-When it is `notion`, follow `docs/notion-workflow.md`: use the official Notion MCP
-connection and the OpenPM hub; local-vault paths, wikilinks, and file-index rules
-below apply only to Obsidian. Preserve the content, evidence, section, interview,
-and versioning requirements. Store metadata as page properties or a table. Use
-Notion page links, search before creating, read before editing, and read back saved
-pages. Without an authenticated Notion connection, preserve the draft and report
-publication pending. Extraction produces local staging files for the agent to
-publish through Notion; it does not upload automatically.
-
-
 # Technical Documentation
 
-Create or edit one English technical documentation file for a software system, product, or platform. Use this skill when the user asks for system documentation, architecture documentation, technical design documentation, or an update to an existing document in this format.
+Create or edit one English technical documentation record for a software system, product, or platform. Use this skill for standalone system, architecture, or technical design documentation; use `create-prdd` for a product requirements + design doc, or `product-technical-specification` when combining product and technical specs into one 12-section document.
 
-## Storage and Naming
+## Destination and Naming
 
-- Resolve the vault from `OBSIDIAN_VAULT_PATH`, `~/Documents/Obsidian Vault`, or `~/Obsidian`; ask for the path if none exists.
-- Store files under `<VAULT>/01 Projects/Technical Documentation/`.
-- Use the filename `Technical Documentation - <Name>.md`.
-- Maintain `<VAULT>/01 Projects/Technical Documentation/Daftar Technical Documentation.md` with one English wikilink per document. Do not add duplicate links.
+- Read only the relevant `DOCUMENTS_PROVIDER`, `NOTION_ROOT_PAGE_URL`, and vault configuration; never print credentials. Unset or blank provider defaults to Notion. Set `DOCUMENTS_PROVIDER=obsidian` only when local Obsidian storage is explicitly requested; an explicit destination overrides configuration.
+- **Notion (default):** Follow [Notion workflow](../../../docs/notion-workflow.md). Store under the OpenPM hub's `Technical Documentation` category with title `Technical Documentation - <Name>`. Put metadata in properties or a table, use Notion page links, search before creating, read before editing, and read back the saved page. If inaccessible or unauthenticated, preserve a local draft and report `publication pending`.
+- **Obsidian:** Resolve the vault from `OBSIDIAN_VAULT_PATH`, `~/Documents/Obsidian Vault`, or `~/Obsidian` (ask if unavailable). Store `Technical Documentation - <Name>.md` under `<VAULT>/01 Projects/Technical Documentation/` with YAML frontmatter and one English wikilink in `<VAULT>/01 Projects/Technical Documentation/Daftar Technical Documentation.md`.
 - Never create an Indonesian companion file.
 
 ## Create Workflow
@@ -46,23 +27,23 @@ Create or edit one English technical documentation file for a software system, p
 1. Ask for the system or product name if it is missing.
 2. Inspect any referenced source files, repositories, schemas, or existing documentation before asking questions.
 3. Ask focused questions only about missing decisions that materially change scope, business rules, or contracts. Group related questions when useful; use available evidence to populate the sections.
-4. Resolve the exact target path before writing. If the document already exists, use the edit workflow and preserve its content instead of replacing it.
+4. Resolve the exact target in the configured destination before writing. If the document already exists, use the edit workflow and preserve its content instead of replacing it.
 5. Create a useful document from the available evidence. Set `status: Draft` while material decisions remain unresolved and mark unknowns as `TBD`. Do not mark the document approved without evidence of approval.
-6. Add YAML frontmatter with `title`, `version`, `status`, `author`, `date`, `type`, `language: en`, and `source` when applicable.
-7. Add a version-history table at the end and update the documentation index.
+6. Add metadata (`title`, `version`, `status`, `author`, `date`, `type`, `language: en`, and `source` when applicable) via YAML frontmatter (Obsidian) or a metadata table/properties (Notion). Set `author` to the active user's profile name (from the authenticated workspace/tool profile or git user, or `TBD` if unavailable)—never to the AI/CLI tool name.
+7. Add a version-history table at the end and verify index/category membership.
 
 ## Edit Workflow
 
-- Locate the exact `Technical Documentation - <Name>.md` file before editing it.
-- Read the complete document and preserve all required sections, existing technical identifiers, API paths, table names, code examples, and unrelated content.
-- Update the requested facts and all directly affected sections, including architecture, ERD, data dictionary, API contracts, diagrams, and failure handling. Preserve unrelated content and the document structure; report which sections changed.
-- Increment the frontmatter version (for example `1.0` to `1.1`) and append an English version-history entry for every material edit.
+- Locate and read the complete `Technical Documentation - <Name>` page (Notion) or `.md` file (Obsidian) before editing.
+- Preserve all required sections, existing technical identifiers, API paths, table names, code examples, and unrelated content.
+- Update the requested facts and all directly affected sections, including `TL;DR`, architecture, ERD, data dictionary, API contracts, diagrams, and failure handling. Report which sections changed.
+- Increment the version metadata (for example `1.0` to `1.1`) and append an English version-history entry for every material edit.
 - If an active editor marker, lock, or conflicting unsaved version is present, stop and ask the user rather than overwriting it.
 - Update the index only when the document is newly created or its title/path changes.
 
 ## Required Document Structure
 
-Use these headings in this order. Preserve all ten headings when editing:
+Start with an opening `## TL;DR` section (concise summary of system purpose, core architecture, boundaries, and status), then use these ten headings in order and preserve all ten when editing:
 
 1. `## 1. System Purpose & Core Principles`
 2. `## 2. High-Level System Architecture`
@@ -129,13 +110,14 @@ Document these when the system has state-changing or money/security-sensitive fl
 
 Before reporting completion, verify:
 
-- the file is in the configured technical-documentation folder with the required filename;
-- all ten required headings exist in order;
-- frontmatter is valid and says `language: en`;
+- the document is saved in the configured destination with the required title/filename (and read back if in Notion);
+- an opening `## TL;DR` section and all ten required headings exist in order;
+- metadata/frontmatter is valid and says `language: en`;
+- all residual wording, filler, and repetition are removed;
 - Mermaid blocks have been checked with an available parser or renderer and syntax errors fixed; name the tool used, or report manual review and lack of parser verification when no tool is available;
 - exact API paths, table/collection names, enum values, and code identifiers match the source material;
 - every state-changing integration documents its failure, retry, idempotency, and transaction behavior when known;
 - implementation, testing, operations, and data-governance appendices are present only when relevant;
 - version history matches the current version;
-- the index contains exactly one wikilink for the document;
+- the category/index contains exactly one entry for the document;
 - no unrelated files or companion-language documents were created or changed.

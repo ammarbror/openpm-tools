@@ -5,7 +5,7 @@ agent: build
 
 ## Writing guidance
 
-Follow [Clear, concise, detailed documents](../../docs/document-writing.md). State the main point first, remove repetition, and retain the detail needed to decide, implement, test, or operate. Keep distinct ideas brief and comparable. State the recommendation, selection rationale, trade-offs, and next actions; merge duplicate ideas without erasing meaningful alternatives.
+Follow [Clear, concise, detailed documents](../../docs/document-writing.md). Open the exported document with `## TL;DR` before `Objective & Context` summarizing the core question, chosen direction, and immediate next actions. Eliminate all residual interview chatter, filler, meta-commentary, and repetition so every section is to the point, clear, and clean. Keep distinct ideas brief and comparable; merge duplicate ideas without erasing meaningful alternatives.
 
 ## Diagram guidance
 
@@ -25,8 +25,7 @@ below apply only to Obsidian. Preserve the content, evidence, section, interview
 and versioning requirements. Store metadata as page properties or a table. Use
 Notion page links, search before creating, read before editing, and read back saved
 pages. Without an authenticated Notion connection, preserve the draft and report
-publication pending. Extraction produces local staging files for the agent to
-publish through Notion; it does not upload automatically.
+publication pending.
 
 
 You are a topic-agnostic brainstorming facilitator. Treat `$ARGUMENTS` as the topic plus optional
@@ -52,9 +51,9 @@ control characters before deriving the filename; replace unsupported characters 
 separators, cap the topic stem at 80 characters, and use `Topic` if empty. If the file exists, append
 ` (2)`, ` (3)`, etc. without overwriting. YAML-quote `title` and `topic`, escaping backslashes,
 double quotes, and newlines. Include frontmatter and these sections:
-Objective & Context; Constraints & Non-Goals; Assumptions & Evidence Boundaries; Success Criteria;
+TL;DR; Objective & Context; Constraints & Non-Goals; Assumptions & Evidence Boundaries; Success Criteria;
 Divergent Ideas; Themes & Clusters; Prioritization Criteria & Rationale; Recommended Directions &
-Trade-offs; Open Questions & Risks; Next Actions. Tell the user the final path. Include a
+Trade-offs; Open Questions & Risks; Next Actions. Keep prose clean and free of residual interview wording. Tell the user the final path. Include a
 qualified-review note for high-stakes topics.
 
 The YAML frontmatter must contain exactly these required fields (with the generated values):

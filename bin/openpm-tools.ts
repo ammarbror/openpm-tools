@@ -302,7 +302,7 @@ async function main() {
             '9. Dependencies & Risks'
           ],
           outputs: [`PRDD - ${prodName} (EN).md`],
-          writing: 'Follow docs/document-writing.md: state the main point first, remove repetition, and preserve actionable rules, exact contracts, exceptions, and evidence. Keep required sections and edit scope.',
+          writing: 'Follow docs/document-writing.md: open with ## TL;DR before Section 1, eliminate all residual wording, filler, and repetition so prose is to the point, clear, and clean, set author to the active user profile (never the AI/CLI tool name), and preserve actionable rules, exact contracts, exceptions, and evidence. Keep required sections and edit scope.',
           diagrams: 'Follow docs/document-diagrams.md: include context, primary journey, architecture, ERD, and critical integration sequences where supported. Explain each diagram, preserve exact identifiers, and validate Mermaid. For edits, update only affected views.'
         };
         if (isJson) {
@@ -310,7 +310,7 @@ async function main() {
         } else {
           console.log(`=== PRDD Creation Guide for "${prodName}" ===`);
           console.log('Run via AI Agent (Codex / OpenCode / Claude Code / Hermes / OpenClaw / Antigravity):');
-          console.log('Use slash command /create-prdd to inspect sources, ask focused questions, and write one English nine-section PRDD.');
+          console.log('Use slash command /create-prdd to inspect sources, ask focused questions, and write one English TL;DR + nine-section PRDD.');
           console.log(guide.writing);
           console.log(guide.diagrams);
         }
@@ -348,6 +348,7 @@ async function main() {
             cadence: 'one substantive question per turn',
             earlyFinishSignals: ['finish', 'done', 'export'],
             sections: [
+              'TL;DR',
               'Objective & Context',
               'Constraints & Non-Goals',
               'Assumptions & Evidence Boundaries',
@@ -360,7 +361,7 @@ async function main() {
               'Next Actions',
             ],
           },
-          writing: 'Follow docs/document-writing.md: state the main point first, remove repetition, and preserve actionable rules, exact contracts, exceptions, and evidence. Keep required sections and edit scope.',
+          writing: 'Follow docs/document-writing.md: open with ## TL;DR before Objective & Context, eliminate all residual interview wording, filler, and repetition so prose is to the point, clear, and clean, and preserve actionable rules, exact contracts, exceptions, and evidence. Keep required sections and edit scope.',
           mermaid: {
             policy: 'Follow docs/document-diagrams.md: include a theme/cluster map and a decision or next-action flow for topics with meaningful relationships; simple topics may remain diagram-free.',
             requirement: 'Use valid mermaid fenced blocks, explain each in prose, label ideas and assumptions, and validate with an available parser or report manual review. Preserve the text summary when rendering is unavailable.',
@@ -403,7 +404,7 @@ async function main() {
             '9. Dependencies & Risks'
           ],
           outputs: [`PRDD - ${prodName} (EN).md`],
-          writing: 'Follow docs/document-writing.md: state the main point first, remove repetition, and preserve actionable rules, exact contracts, exceptions, and evidence. Keep required sections and edit scope.',
+          writing: 'Follow docs/document-writing.md: ensure an opening ## TL;DR before Section 1, eliminate all residual wording, stale leftovers, filler, and repetition so prose is to the point, clear, and clean, set author to the active user profile (never the AI/CLI tool name), and preserve actionable rules, exact contracts, exceptions, and evidence. Keep required sections and edit scope.',
           diagrams: 'Follow docs/document-diagrams.md: include context, primary journey, architecture, ERD, and critical integration sequences where supported. Explain each diagram, preserve exact identifiers, and validate Mermaid. For edits, update only affected views.'
         };
         if (isJson) {

@@ -183,16 +183,22 @@ describe('extract-knowledge module', () => {
     });
 
     it('uses fetchLike and returns enhanced text on 200', async () => {
-      const mockFetch: typeof globalThis.fetch = async () =>
-        new Response(
+      let capturedSystemPrompt = '';
+      const mockFetch: typeof globalThis.fetch = async (_url, init) => {
+        const body = JSON.parse(String(init?.body || '{}'));
+        capturedSystemPrompt = body?.messages?.[0]?.content || '';
+        return new Response(
           JSON.stringify({
             choices: [{ message: { content: 'Enhanced Content' } }],
           }),
           { status: 200 }
         );
+      };
 
       const result = await enhanceWithLLM('Raw Content', { apiKey: 'fake-key', fetchLike: mockFetch });
       assert.strictEqual(result, 'Enhanced Content');
+      assert.match(capturedSystemPrompt, /## TL;DR/);
+      assert.match(capturedSystemPrompt, /residual or filler wording/);
     });
 
     it('falls back to raw content on non-200 HTTP response, invalid JSON, or fetch timeout', async () => {

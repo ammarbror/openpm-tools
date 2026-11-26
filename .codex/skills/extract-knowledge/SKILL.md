@@ -5,7 +5,7 @@ description: Convert supported documents into AI-friendly knowledge Markdown fil
 
 ## Writing guidance
 
-Follow [Clear, concise, detailed documents](../../../docs/document-writing.md). State the main point first, remove repetition, and retain the detail needed to decide, implement, test, or operate. Apply concise writing to authored summaries and enrichment. Preserve raw extraction, source provenance, exact identifiers, conditions, and exceptions; do not silently condense source evidence or imply the CLI rewrites it automatically.
+Follow [Clear, concise, detailed documents](../../../docs/document-writing.md). When authoring or publishing the knowledge document, start with a concise `## TL;DR` section summarizing the core purpose, takeaways, and scope before the main body. Eliminate parsing artifacts, residual template/OCR wording, filler, meta-commentary, and repetition so authored summaries are to the point, clear, and clean. If setting `author` metadata, use the active user's profile (or original source author, or `TBD` if unavailable)—never the AI/CLI tool name. Preserve raw extraction, source provenance, exact identifiers, conditions, and exceptions; do not silently condense source evidence or imply the CLI rewrites it automatically.
 
 ## Diagram guidance
 
