@@ -15,12 +15,7 @@ export async function executeKartiniQuery(
   const config = getKartiniDbConfig(env);
 
   let formattedSql = sql.trim();
-  const strictReadOnly = options?.strictReadOnly ?? (env === 'prod' || config.readonly);
-
-  if (strictReadOnly) {
-    // Wrap in read-only transaction for absolute safety
-    formattedSql = `SET TRANSACTION READ ONLY;\n${formattedSql}`;
-  }
+  const strictReadOnly = env === 'prod' || (options?.strictReadOnly ?? config.readonly);
 
   const psqlArgs = [
     '-h', config.host,
@@ -30,9 +25,14 @@ export async function executeKartiniQuery(
   ];
 
   if (options?.json) {
-    // Output json array format
-    formattedSql = `SELECT json_agg(t) FROM (${sql.replace(/;+$/, '')}) t;`;
-    psqlArgs.push('-t', '-A');
+    formattedSql = `SELECT json_agg(t) FROM (${formattedSql.replace(/;+$/, '')}) t;`;
+    // Keep transaction command tags out of the JSON output.
+    psqlArgs.push('-q', '-t', '-A');
+  }
+
+  if (strictReadOnly) {
+    // Use the same psql -c request so both statements share a transaction.
+    formattedSql = `SET TRANSACTION READ ONLY;\n${formattedSql}`;
   }
 
   psqlArgs.push('-c', formattedSql);
